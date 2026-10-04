@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "ROAD",
+    "slug": "road-driver-companion",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "mn.road.driver"
+    },
+    "ios": {
+      "bundleIdentifier": "mn.road.driver",
+      "supportsTablet": false
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0C1118"
+        }
+      ]
+    ]
+  }
+}

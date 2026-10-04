@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ROAD APP — Зураглал v3</title>
+<style>
+:root{
+  --bg:#0e1116; --bg2:#151a22; --card:#1a2029; --line:#2a323e;
+  --tx:#e8edf4; --tx2:#9aa7b8; --tx3:#6b7889;
+  --acc:#f4a340; --acc2:#5aa9e6; --ok:#4fbf7b; --warn:#e8674a; --pur:#a98bd8;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;line-height:1.6;font-size:15px}
+a{color:var(--acc2)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+
+/* header */
+header{padding:56px 0 34px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.badge{display:inline-block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);border:1px solid rgba(244,163,64,.35);background:rgba(244,163,64,.08);padding:5px 12px;border-radius:99px}
+h1{font-size:44px;margin:16px 0 6px;letter-spacing:-.02em;line-height:1.1}
+h1 span{color:var(--acc)}
+.sub{color:var(--tx2);font-size:17px;max-width:760px}
+.meta{color:var(--tx3);font-size:13px;margin-top:14px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(14,17,22,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin-bottom:34px}
+nav .wrap{padding:0 20px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+nav button{background:none;border:0;color:var(--tx2);font:inherit;font-size:14px;padding:14px 12px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+nav button:hover{color:var(--tx)}
+nav button.on{color:var(--acc);border-bottom-color:var(--acc)}
+
+section{display:none;animation:fade .25s ease}
+section.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+h2{font-size:28px;margin:8px 0 6px;letter-spacing:-.01em}
+h3{font-size:19px;margin:34px 0 12px;color:var(--tx)}
+h4{font-size:15px;margin:22px 0 8px;color:var(--acc)}
+p.lead{color:var(--tx2);margin:0 0 24px;max-width:820px}
+
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.card h5{margin:0 0 8px;font-size:16px}
+.card p{margin:0;color:var(--tx2);font-size:14px}
+
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;letter-spacing:.03em}
+.p0{background:rgba(232,103,74,.16);color:#ff9375;border:1px solid rgba(232,103,74,.3)}
+.p1{background:rgba(244,163,64,.14);color:var(--acc);border:1px solid rgba(244,163,64,.3)}
+.p2{background:rgba(90,169,230,.14);color:var(--acc2);border:1px solid rgba(90,169,230,.3)}
+.p3{background:rgba(169,139,216,.14);color:var(--pur);border:1px solid rgba(169,139,216,.3)}
+.new{background:rgba(79,191,123,.14);color:var(--ok);border:1px solid rgba(79,191,123,.3)}
+
+table{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--tx3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{background:var(--bg2);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--acc)}
+
+pre{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:18px;overflow-x:auto;font-size:13px;line-height:1.55;color:var(--tx2)}
+
+/* pillars */
+.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:20px 0}
+.pil{border-radius:var(--r);padding:18px;border:1px solid var(--line);background:var(--card);position:relative;overflow:hidden}
+.pil::before{content:"";position:absolute;inset:0 auto 0 0;width:3px}
+.pil.a::before{background:var(--acc)} .pil.b::before{background:var(--ok)}
+.pil.c::before{background:var(--warn)} .pil.d::before{background:var(--acc2)}
+.pil h5{margin:0 0 4px;font-size:15px;letter-spacing:.04em}
+.pil .fr{font-size:12px;color:var(--tx3);margin-bottom:10px}
+.pil ul{margin:0;padding-left:16px;font-size:13px;color:var(--tx2)}
+
+/* phone */
+.proto{display:grid;grid-template-columns:300px 1fr;gap:32px;align-items:start;margin-top:22px}
+@media(max-width:820px){.proto{grid-template-columns:1fr}}
+.phone{background:#000;border:9px solid #22282f;border-radius:34px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative}
+.pscreen{background:var(--bg2);min-height:520px;padding:14px 12px 66px;font-size:13px}
+.pbar{display:flex;justify-content:space-between;color:var(--tx3);font-size:10px;padding:2px 4px 10px}
+.ptitle{font-size:16px;font-weight:600;margin:0 0 10px}
+.pitem{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:7px;font-size:12.5px;color:var(--tx2)}
+.pitem b{color:var(--tx);font-weight:600;display:block;font-size:13px}
+.pitem .t{font-size:11px;color:var(--tx3)}
+.ptabs{position:absolute;left:0;right:0;bottom:0;display:flex;background:#11151b;border-top:1px solid var(--line)}
+.ptabs button{flex:1;background:none;border:0;color:var(--tx3);font:inherit;font-size:9.5px;padding:9px 2px 11px;cursor:pointer;line-height:1.3}
+.ptabs button .ic{display:block;font-size:16px;margin-bottom:2px}
+.ptabs button.on{color:var(--acc)}
+.sos{position:absolute;right:12px;bottom:74px;width:46px;height:46px;border-radius:50%;background:var(--warn);color:#fff;border:0;font-size:17px;cursor:pointer;box-shadow:0 6px 18px rgba(232,103,74,.45)}
+.detail h4{margin-top:0}
+.detail ul{padding-left:18px;color:var(--tx2);font-size:14px}
+.detail li{margin-bottom:5px}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px}
+.filters button{background:var(--card);border:1px solid var(--line);color:var(--tx2);font:inherit;font-size:13px;padding:6px 14px;border-radius:99px;cursor:pointer}
+.filters button.on{background:var(--acc);border-color:var(--acc);color:#1a1206;font-weight:600}
+.count{color:var(--tx3);font-size:13px;margin-left:6px}
+
+.flow{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:0 var(--r) var(--r) 0;padding:16px 20px;margin:14px 0;font-size:14px;color:var(--tx2)}
+.flow b{color:var(--tx)}
+.flow .step{display:inline-block;margin:3px 0}
+.arw{color:var(--acc);margin:0 7px}
+
+.note{background:rgba(244,163,64,.07);border:1px solid rgba(244,163,64,.25);border-radius:var(--r);padding:16px 20px;margin:20px 0;font-size:14px;color:var(--tx2)}
+.note b{color:var(--acc)}
+.money{font-variant-numeric:tabular-nums;color:var(--ok);font-weight:600;white-space:nowrap}
+footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);color:var(--tx3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <span class="badge">Зураглал · Хувилбар 3 · 2026.08</span>
+  <h1><span>ROAD</span> — нүүрсний замын жолоочийн өдөр тутмын хамтрагч</h1>
+  <p class="sub">Дараалал, зам, түлш, тусламж, зөвлөгөө нь <b>өдөр бүр</b> нээлгэдэг. Дэлгүүр, захиалга, төлбөр нь <b>мөнгө оруулдаг</b>.</p>
+  <p class="meta">Эх сурвалж: бизнес төлөвлөгөө · SRS/TOR v1+v2 · Гео-Интегрэйшн "COAL MINE" даалгавар (2023) · санааны ноорог · санхүүгийн прогноз</p>
+</header>
+</div>
+
+<nav><div class="wrap">
+  <button data-s="s1" class="on">Санаа</button>
+  <button data-s="s2">Цэс &amp; прототип</button>
+  <button data-s="s3">Боломжийн жагсаалт</button>
+  <button data-s="s4">Дэлгэц (50)</button>
+  <button data-s="s5">Орлого</button>
+  <button data-s="s6">Flow</button>
+  <button data-s="s7">Админ</button>
+  <button data-s="s8">Архитектур</button>
+  <button data-s="s9">Төлөвлөгөө</button>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ============ S1 ============ -->
+<section id="s1" class="on">
+  <h2>Санааг баяжуулсан байрлуулалт</h2>
+  <p class="lead">Хуучин томьёолол — "Цогтцэцийн дэлгүүрүүдийн каталог + захиалга" — улирлын хэрэглээ. Жолооч сард 2–3 удаа л захиална, ийм апп утаснаас устдаг. Шинэ томьёолол нь <b>өдөр тутмын шалтгаан → худалдааны мөч</b> гэсэн гинжин холбоо дээр суурилна.</p>
+
+  <div class="pillars">
+    <div class="pil a"><h5>🔁 HOOK</h5><div class="fr">Өдөрт 3–10 удаа</div><ul><li>Дараалал</li><li>Зам, цаг агаар</li><li>Шатахуун</li><li>Зогсоол</li><li>Мэдээ</li></ul></div>
+    <div class="pil b"><h5>🤝 TRUST</h5><div class="fr">7 хоногт 2–5 удаа</div><ul><li>ROAD Зөвлөгөө</li><li>Асуулт–Хариулт</li><li>Бэлэглэнэ</li><li>Жолоочийн профайл</li></ul></div>
+    <div class="pil c"><h5>🆘 SAFETY</h5><div class="fr">Ховор, мартагдашгүй</div><ul><li>SOS</li><li>Ойрын тусламж</li><li>Осол мэдээлэх</li><li>Байршил хуваалцах</li></ul></div>
+    <div class="pil d"><h5>💰 MONEY</h5><div class="fr">Сард 2–8 удаа</div><ul><li>Каталог</li><li>Захиалга, төлбөр</li><li>Хүргэлт</li><li>B2B</li></ul></div>
+  </div>
+
+  <h3>Дөрвөн тулгуур — архитектурын зураглал</h3>
+  <pre>                              ROAD
+                                │
+    ┌───────────────┬───────────┴───────────┬───────────────┐
+    │               │                       │               │
+ COMMERCE       COMMUNITY                SAFETY           WORK
+ Дэлгүүр        Зөвлөгөө                 SOS             Дараалал
+ Захиалга       Асуулт–Хариулт           Тусламж         Ачилт
+ Төлбөр         Бэлэглэнэ                Зам             Жин
+ Хүргэлт        Driver profile           Осол            Аяллын дэвтэр
+ B2B            Үнэлгээ                  Convoy          Fleet
+    │               │                       │               │
+    └───────────────┴───────────┬───────────┴───────────────┘
+                                │
+         LOCATION  ·  PAYMENT  ·  IDENTITY  ·  OFFLINE</pre>
+  <div class="note"><b>WORK</b> бол өмнөх ноорогт байгаагүй шинэ 4 дэх багана — нүүрсний замын жолоочийн ажил өөрөө: дараалал, ачилт, жин, орлого. Хамгийн давтамжтай, хамгийн хуулбарлахад хэцүү давхарга. UBCab, GoGo, Yelp-д <b>«чиглэл» гэсэн ойлголт байхгүй</b> учир энэ баганыг тэд хийж чадахгүй.</div>
+
+  <h3>Хэрэглэгчийн төрөл ба гол өвдөлт</h3>
+  <table>
+    <thead><tr><th>Код</th><th>Хэрэглэгч</th><th>Гол өвдөлт</th><th>ROAD-ийн хариулт</th></tr></thead>
+    <tbody>
+      <tr><td><code>U01</code></td><td>Иргэн / оршин суугч</td><td>Юу байдгийг мэдэхгүй, утсаар залгаж асуудаг</td><td>Каталог + үнэлгээ + захиалга</td></tr>
+      <tr><td><code>U02</code></td><td><b>Жолооч</b></td><td>Дараалал хэдэн цаг вэ? Зам ямар вэ? Дугуй хагарлаа</td><td>Дараалал, Зам, Зөвлөгөө, Тусламж</td></tr>
+      <tr><td><code>U03</code></td><td>Бизнес эрхлэгч</td><td>Үйлчлүүлэгч санамсаргүй ирдэг, төлөвлөх боломжгүй</td><td>Урьдчилсан захиалга + premium + аналитик</td></tr>
+      <tr><td><code>U04</code></td><td>Уурхай / байгууллага</td><td>Кемпийн хангамж, нийлүүлэгч олоход хүнд</td><td>B2B marketplace + tender</td></tr>
+      <tr><td><code>U05</code></td><td>Администратор</td><td>—</td><td>Админ веб</td></tr>
+      <tr><td><code>U06</code></td><td>Орон нутаг / оператор</td><td>Шийдвэр жолооч руу хүрдэггүй, эргэх холбоогүй</td><td>Албан мэдэгдэл + санал хүсэлт</td></tr>
+      <tr><td><code>U07</code></td><td>Тээврийн менежер <span class="pill new">шинэ</span></td><td>30–200 машины байршил, түлш, ачилт хаана вэ?</td><td>Fleet веб + аяллын дэвтэр</td></tr>
+      <tr><td><code>U08</code></td><td>Модератор / Verified жолооч <span class="pill new">шинэ</span></td><td>Буруу зөвлөгөө аюултай</td><td>Модерацийн эрх, contribution оноо</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Зах зээл</h3>
+  <div class="grid g4">
+    <div class="card"><h5>15–25 мянга</h5><p>Жолооч</p></div>
+    <div class="card"><h5>20–40 мянга</h5><p>Уурхайн ажилчид</p></div>
+    <div class="card"><h5>8 мянга+</h5><p>Цогтцэцийн оршин суугчид</p></div>
+    <div class="card"><h5>200–500</h5><p>Дэлгүүр, үйлчилгээ</p></div>
+  </div>
+</section>
+
+<!-- ============ S2 ============ -->
+<section id="s2">
+  <h2>Цэсний бүтэц &amp; интерактив прототип</h2>
+  <p class="lead">Доод 5 таб + бүх дэлгэц дээр хөвөх SOS товч. Таб дээр товшиж дэлгэцийн агуулгыг үзнэ үү.</p>
+
+  <div class="proto">
+    <div class="phone">
+      <div class="pscreen">
+        <div class="pbar"><span>09:41</span><span>▮▮▮ 4G ▮</span></div>
+        <div id="pbody"></div>
+      </div>
+      <button class="sos" id="sosBtn" title="SOS">🆘</button>
+      <div class="ptabs" id="ptabs"></div>
+    </div>
+    <div class="detail" id="detail"></div>
+  </div>
+
+  <h3>Бүтэн мод</h3>
+  <pre>ROAD
+├── 🏠 Нүүр            байршил · цаг агаар · <b>дараалал</b> · хайлт · хурдан үйлдэл · идэвхтэй захиалга · feed
+├── 🛣 Зам             газрын зураг · миний чиглэл · зам дагуух үйлчилгээ · <b>дараалал &amp; ачилт</b>
+│                      замын нөхцөл · <b>шатахуун</b> · <b>зогсоол</b> · convoy · байршил хуваалцах
+├── 🛒 Захиалга        каталог · бизнес · бараа · сагс · Click&amp;Collect / зам дагуух / хүргэлт
+│                      QPay төлбөр · eBarimt · миний захиалга · B2B
+├── 👥 Community       ROAD Зөвлөгөө · Асуулт–Хариулт · 🎁 Бэлэглэнэ · зар · жолоочийн профайл · мэдээ
+├── 👤 Би              профайл · <b>машины профайл</b> · <b>аяллын дэвтэр</b> · төлбөрийн түүх
+│                      хадгалсан · Premium · мэдэгдэл · тохиргоо · тусламж
+└── 🆘 SOS             асуудал сонгох · байршил · ойрын тусламж · радиус дуудлага · 103/105</pre>
+</section>
+
+<!-- ============ S3 ============ -->
+<section id="s3">
+  <h2>Боломжийн бүрэн жагсаалт</h2>
+  <p class="lead">Хувилбар болон цэсээр шүүнэ. <b>R1</b> = MVP (Pilot 2027.04), <b>R2</b> = тогтворжуулалт, <b>R3</b> = өргөтгөл.</p>
+  <div class="filters" id="frel"></div>
+  <div class="filters" id="fmen"></div>
+  <div class="count" id="fcount"></div>
+  <table><thead><tr><th style="width:70px">Код</th><th>Боломж</th><th>Тайлбар</th><th style="width:90px">Цэс</th><th style="width:60px">Хувилбар</th></tr></thead><tbody id="ftbody"></tbody></table>
+</section>
+
+<!-- ============ S4 ============ -->
+<section id="s4">
+  <h2>Дэлгэцийн жагсаалт</h2>
+  <p class="lead">R1-д ~42 дэлгэц, R2-т +8. Дизайнерт өгөх wireframe-ийн жагсаалт.</p>
+  <div id="screens"></div>
+</section>
+
+<!-- ============ S5 ============ -->
+<section id="s5">
+  <h2>Орлогын урсгал ↔ цэсний холбоо</h2>
+  <p class="lead">Санхүүгийн прогнозын урсгал бүрийг аппын аль цэсээр, ямар механикаар олох вэ.</p>
+  <table>
+    <thead><tr><th>Орлогын урсгал</th><th>Аль цэсээр</th><th>Механик</th><th>Сарын дүн</th></tr></thead>
+    <tbody>
+      <tr><td>Premium жагсаалт</td><td>Хайлт, зам дагуух жагсаалт</td><td>Дээгүүр гарах, тэмдэг, нэмэлт зураг</td><td class="money">5–15 сая ₮</td></tr>
+      <tr><td>Сурталчилгаа</td><td>Нүүр баннер, geofence</td><td>«5 км-т Ундрага дэлгүүр»</td><td class="money">3–10 сая ₮</td></tr>
+      <tr><td>Захиалгын комисс</td><td>Төлбөр</td><td>Захиалгын 3–7%</td><td class="money">5–15 сая ₮</td></tr>
+      <tr><td>Хүргэлтийн төлбөр</td><td>Хүргэлт</td><td>Тогтмол + км</td><td class="money">3–9 сая ₮</td></tr>
+      <tr><td>Зам дагуух хүргэлт</td><td>Зам / Захиалга</td><td>Урьдчилсан захиалгын нэмэгдэл</td><td class="money">3–9 сая ₮</td></tr>
+      <tr><td>Уурхайн B2B</td><td>B2B булан</td><td>Тендер шимтгэл, subscription</td><td class="money">5–30 сая ₮</td></tr>
+      <tr><td>Зар</td><td>Community</td><td>Тодруулах, дээшлүүлэх</td><td class="money">2–10 сая ₮</td></tr>
+      <tr><td>Premium гишүүнчлэл</td><td>Би</td><td>9,900–19,900 ₮/сар</td><td class="money">3–10 сая ₮</td></tr>
+      <tr><td><b>Fleet subscription</b> <span class="pill new">шинэ</span></td><td>Fleet веб</td><td>Машин тутамд сарын төлбөр (30+ машин)</td><td class="money">5–20 сая ₮</td></tr>
+      <tr><td><b>Мэдээллийн тайлан</b> <span class="pill new">шинэ</span></td><td>Аналитик</td><td>Уурхай/орон нутагт нэгтгэсэн тайлан (хувийн мэдээлэлгүй)</td><td class="money">3–15 сая ₮</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Зарчим:</b> Бэлэглэнэ, Зөвлөгөө, SOS, Дараалал — <b>хэзээ ч төлбөртэй болгохгүй</b>. Эдгээр нь хэрэглэгч татах хөрөнгө оруулалт. Мөнгө нь захиалга, бизнес, B2B-ээс гарна.</div>
+
+  <h3>Санхүүгийн төсөөлөл</h3>
+  <table>
+    <thead><tr><th>Жил</th><th>Орлого</th><th>Зардал</th><th>Цэвэр</th></tr></thead>
+    <tbody>
+      <tr><td>2027 (Pilot)</td><td>30–100 сая ₮</td><td>60–100 сая ₮</td><td>−30…0 сая ₮</td></tr>
+      <tr><td>2028</td><td>150–300 сая ₮</td><td>100–180 сая ₮</td><td class="money">50–120 сая ₮</td></tr>
+      <tr><td>2029</td><td>350–700 сая ₮</td><td>200–400 сая ₮</td><td class="money">150–300 сая ₮</td></tr>
+      <tr><td>2030</td><td>600–1,200 сая ₮</td><td>300–600 сая ₮</td><td class="money">300–600 сая ₮</td></tr>
+      <tr><td>2031</td><td>1–2 тэрбум ₮</td><td>500–1,000 сая ₮</td><td class="money">500 сая – 1 тэрбум ₮</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ S6 ============ -->
+<section id="s6">
+  <h2>Гол user flow</h2>
+
+  <h4>① Дугуй хагарлаа — ROAD-ийн шилдэг жишээ</h4>
+  <div class="flow"><span class="step"><b>🆘 SOS</b></span><span class="arw">→</span><span class="step">Дугуй хагарсан</span><span class="arw">→</span><span class="step">Зөвлөгөө «Нөхөх 7 алхам»</span><span class="arw">→</span><span class="step">чадахгүй</span><span class="arw">→</span><span class="step">Ойрын дугуй засвар 3.2 км</span><span class="arw">→</span><span class="step">Захиалах</span><span class="arw">→</span><span class="step">QPay</span><span class="arw">→</span><span class="step">Зам заах</span><span class="arw">→</span><span class="step">⭐ Үнэлгээ</span>
+  <p style="margin:12px 0 0;font-size:13px;color:var(--tx3)">Нэг үйл явдал дотор SAFETY → COMMUNITY → COMMERCE → PAYMENT бүгд ажиллана. Энэ бол ROAD-ийн ялгарал.</p></div>
+
+  <h4>② Зам дагуух урьдчилсан захиалга</h4>
+  <div class="flow"><span class="step">Чиглэл ТТ→ГС</span><span class="arw">→</span><span class="step">«Цогтцэций 142 км»</span><span class="arw">→</span><span class="step">Ундрага дэлгүүр</span><span class="arw">→</span><span class="step">Бараа сонгох</span><span class="arw">→</span><span class="step"><b>«Би 18:30-д ирнэ»</b></span><span class="arw">→</span><span class="step">Төлбөр</span><span class="arw">→</span><span class="step">Бизнес бэлдэнэ</span><span class="arw">→</span><span class="step">5 км-т geofence push</span><span class="arw">→</span><span class="step">Авах код</span><span class="arw">→</span><span class="step">⭐</span></div>
+
+  <h4>③ Дараалал</h4>
+  <div class="flow"><span class="step">Нүүр widget «Гашуунсухайт ~4ц 20м»</span><span class="arw">→</span><span class="step">Дэлгэрэнгүй</span><span class="arw">→</span><span class="step"><b>«Би дараалалд орлоо»</b></span><span class="arw">→</span><span class="step">Хүлээж байхад: цайны газар, халуун ус санал болгох</span><span class="arw">→</span><span class="step">Гарахад хүлээлт автоматаар тооцогдоно</span>
+  <p style="margin:12px 0 0;font-size:13px;color:var(--tx3)">Crowdsource loop: хэрэглэгч мэдээлэл өгснөөр бусдын мэдээлэл сайжирна → өдөр бүр нээх шалтгаан.</p></div>
+
+  <h4>④ Бэлэглэнэ</h4>
+  <div class="flow"><span class="step">Зар оруулах (зураг, тайлбар, байршил)</span><span class="arw">→</span><span class="step">Хүсэлтүүд</span><span class="arw">→</span><span class="step">Эзэмшигч сонгоно</span><span class="arw">→</span><span class="step">Уулзалт</span><span class="arw">→</span><span class="step">Олгосон</span><span class="arw">→</span><span class="step">Талархал</span></div>
+
+  <h4>⑤ Төлбөр (техникийн)</h4>
+  <div class="flow"><span class="step">Order created</span><span class="arw">→</span><span class="step">Invoice (QPay API)</span><span class="arw">→</span><span class="step">QR / deeplink</span><span class="arw">→</span><span class="step">Хэрэглэгч төлнө</span><span class="arw">→</span><span class="step">Callback</span><span class="arw">→</span><span class="step"><b>Backend verify</b></span><span class="arw">→</span><span class="step">Order = PAID</span><span class="arw">→</span><span class="step">eBarimt</span><span class="arw">→</span><span class="step">Push бизнес рүү</span><span class="arw">→</span><span class="step">Settlement</span>
+  <p style="margin:12px 0 0;font-size:13px;color:var(--tx3)">Callback дангаараа хангалтгүй — заавал provider API-аар баталгаажуулна. Idempotency key-ээр давхар төлбөрөөс хамгаална.</p></div>
+</section>
+
+<!-- ============ S7 ============ -->
+<section id="s7">
+  <h2>Админ веб</h2>
+  <p class="lead">Хөгжүүлэгчид өгөх админ вебийн цэсний бүтэн жагсаалт.</p>
+  <div class="grid g3" id="admin"></div>
+</section>
+
+<!-- ============ S8 ============ -->
+<section id="s8">
+  <h2>Технологи / архитектур</h2>
+  <p class="lead">Замын 60–70% нь сүлжээ муутай, өвөл −35°, дата үнэтэй. Архитектур энэ бодит нөхцөлд захирагдана.</p>
+  <div class="grid g2">
+    <div class="card"><h5>Offline-first</h5><p>Local DB (SQLite/Realm), sync queue, «сүүлд шинэчлэгдсэн» цаг, оффлайнд ажиллах хэсгийг тодруулах.</p></div>
+    <div class="card"><h5>Дата хэмнэлт</h5><p>Зургийн 3 хэмжээ, WebP, lazy load, «хөнгөн горим» тохиргоо.</p></div>
+    <div class="card"><h5>Push + SMS fallback</h5><p>Захиалга бэлэн, SOS зэрэг чухал мэдэгдлийг интернэтгүй үед SMS-ээр.</p></div>
+    <div class="card"><h5>Geo-index</h5><p>PostGIS / geohash. Бизнес, бэлэг, SOS, ШТС бүгд нэг geo давхаргад.</p></div>
+    <div class="card"><h5>Route model</h5><p>Route → Segment → POI(km). «Зам дагуух» бүх функцийн суурь.</p></div>
+    <div class="card"><h5>Geofence engine</h5><p>Радиус + чиглэлийн дагуух trigger, батерей хэмнэсэн background location.</p></div>
+    <div class="card"><h5>Payment abstraction</h5><p><code>PaymentProvider</code> interface → QPay эхний. MonPay/PASS/карт нэмэх боломжтой. Secret зөвхөн backend.</p></div>
+    <div class="card"><h5>Idempotency</h5><p>Захиалга/төлбөрт idempotency key — давхар төлбөрөөс хамгаална.</p></div>
+    <div class="card"><h5>Trust &amp; Safety</h5><p>Report → queue → модератор → шийдвэр → audit log. Бэлэглэнэ дотор далд худалдааг автоматаар илрүүлэх.</p></div>
+    <div class="card"><h5>CMS</h5><p>Зөвлөгөө, ангилал, баннер, албан мэдэгдэл — код өөрчлөхгүйгээр удирдана.</p></div>
+    <div class="card"><h5>Analytics</h5><p>Event schema эхнээс нь: <code>search</code>, <code>order_created</code>, <code>payment_succeeded</code>, <code>advice_helpful</code>, <code>sos_created</code>, <code>queue_reported</code>.</p></div>
+    <div class="card"><h5>Feature flag</h5><p>Функцийг бүсээр/хувиар нээх — pilot-д чухал.</p></div>
+    <div class="card"><h5>Аюулгүй байдал</h5><p>JWT + refresh, rate limit, RBAC, plaintext хадгалахгүй, audit log, backup + сэргээх сургуулилт.</p></div>
+    <div class="card"><h5>Хүртээмж</h5><p>Том товч, өндөр контраст, нэг гараар — жолооч машин дотор ашиглана.</p></div>
+  </div>
+
+  <h3>Өгөгдлийн үндсэн объект</h3>
+  <pre>User ──┬── Business ── Product ── OrderItem ── Order ── Payment ── Invoice ── Receipt(eBarimt)
+        ├── Review ──────────────────────────────┘
+        ├── Advice ── AdviceStep ── Comment ── Vote
+        ├── Question ── Answer
+        ├── Gift ── GiftRequest ── Handover
+        ├── Ad (зар)
+        ├── Vehicle ── Trip ── FuelLog
+        ├── SosCase ── SosLocation ── ServiceProvider
+        └── DriverProfile ── Verification ── ContributionScore
+
+Route ── Segment ── POI ── QueuePoint ── QueueReport
+RoadAlert · FuelStation · RestStop · Geofence · Notification · AuditLog
+Organization (уурхай/тээвэр) ── Fleet ── FleetVehicle ── Tender ── Contract</pre>
+
+  <h3>API endpoint — жишээ</h3>
+  <pre>POST   /auth/otp/request            POST   /orders
+POST   /auth/otp/verify             GET    /orders/{id}
+GET    /me                          PATCH  /orders/{id}/status
+GET    /businesses?cat=&amp;near=&amp;route= POST   /payments/invoice
+GET    /businesses/{id}             POST   /payments/callback
+GET    /businesses/{id}/products    GET    /payments/{id}/verify
+POST   /reviews                     POST   /payments/{id}/refund
+GET    /routes                      GET    /advice?cat=
+GET    /routes/{id}/pois            POST   /advice
+GET    /queue/{pointId}             POST   /advice/{id}/helpful
+POST   /queue/{pointId}/report      GET    /gifts?near=
+GET    /road-alerts?route=          POST   /gifts
+POST   /road-alerts                 POST   /gifts/{id}/request
+GET    /fuel-stations?near=         POST   /sos
+GET    /rest-stops?near=            GET    /sos/{id}/nearby-help</pre>
+</section>
+
+<!-- ============ S9 ============ -->
+<section id="s9">
+  <h2>Хэрэгжилтийн төлөвлөгөө</h2>
+  <table>
+    <thead><tr><th style="width:40px">#</th><th>Ажил</th><th style="width:150px">Хэзээ</th><th style="width:170px">Хэн</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Эрх зүйн хамгаалалт</b> — зохиогчийн эрх, «ROAD» trademark, домэйн, нотариат</td><td><span class="pill p0">Яаралтай</span> 1–2 сар</td><td>Пүүгий</td></tr>
+      <tr><td>2</td><td>Гео-Интегрэйшн ХХК-тай харилцаа цэгцлэх (2023 оны даалгавартай давхцлыг тодруулах)</td><td><span class="pill p0">Яаралтай</span></td><td>Пүүгий</td></tr>
+      <tr><td>3</td><td>v3-ыг эцэслэн батлах, <b>R1 scope-ыг түгжих</b></td><td>2026.09</td><td>Пүүгий</td></tr>
+      <tr><td>4</td><td>UI/UX wireframe (42 дэлгэц)</td><td>2026.10–11</td><td>Дизайнер</td></tr>
+      <tr><td>5</td><td>Хөгжүүлэгчээс үнийн санал авах (RFP) — 3 газраас</td><td>2026.10</td><td>Пүүгий</td></tr>
+      <tr><td>6</td><td><b>Цогтцэцийн 30–50 бизнесийг урьдчилан бүртгэх</b> (аппгүйгээр, Excel-ээр)</td><td>2026.11–2027.02</td><td>Орон нутгийн менежер</td></tr>
+      <tr><td>7</td><td><b>ROAD Зөвлөгөөний анхны 40–60 нийтлэл бэлдэх</b> (аппгүйгээр)</td><td>2026.11–2027.03</td><td>Пүүгий + туршлагатай жолооч</td></tr>
+      <tr><td>8</td><td>QPay merchant бүртгэл, eBarimt эрх</td><td>2027.01</td><td>Пүүгий</td></tr>
+      <tr><td>9</td><td>MVP хөгжүүлэлт</td><td>2026.12–2027.03</td><td>Хөгжүүлэгч</td></tr>
+      <tr><td>10</td><td>Pilot нээх — эхний 1,000–2,000 хэрэглэгч</td><td>2027.04</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>Хамгийн чухал зөвлөгөө:</b> 6 ба 7 дугаар мөр бол апп бэлэн болохоос <b>өмнө</b> хийж болох ажил. Каталог хоосон, зөвлөгөө хоосон апп нээвэл эхний 500 хэрэглэгч алдагдана. <b>Контентоо аппаасаа өмнө бэлд.</b></div>
+
+  <h3>Эрсдэл</h3>
+  <table>
+    <thead><tr><th>Эрсдэл</th><th style="width:100px">Магадлал</th><th>Шийдэл</th></tr></thead>
+    <tbody>
+      <tr><td>Founder ачаалал</td><td>40%</td><td>Орон нутгийн менежер, founder зөвхөн стратеги</td></tr>
+      <tr><td>Зах зээл бэлэн биш</td><td>30%</td><td>Эхэндээ маш энгийн функц, аажмаар сургах</td></tr>
+      <tr><td>Гадны том өрсөлдөгч (UBCab)</td><td>20%</td><td>Орон нутгийн брэнд, «чиглэл» давуу тал, хурдан давамгайлах</td></tr>
+      <tr><td>Технологийн хүндрэл</td><td>15%</td><td>Чанартай гэрээ, эх кодын эзэмшил ROAD талд</td></tr>
+      <tr><td>Гео-Интегрэйшн зөрчил</td><td>?</td><td>Эрх зүйн хамгаалалт яаралтай</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>ROAD APP · Зураглал v3 · 2026.08.20 · Пүүгий — гэр бүлийн дэмжлэгтэй хувийн төсөл</footer>
+</div>
+
+<script>
+/* ---------- nav ---------- */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.getElementById(b.dataset.s).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+/* ---------- prototype ---------- */
+const TABS=[
+ {id:'home',ic:'🏠',t:'Нүүр',title:'Нүүр',
+  items:[
+   ['📍 Цогтцэций · −4° · салхи 12 м/с','Шороон шуургын анхааруулга 16:00-аас'],
+   ['🚧 Гашуунсухайт — ~4ц 20м','32 жолоочийн мэдээлэл · 12 мин өмнө'],
+   ['🔎 Хайх','бизнес · бараа · зөвлөгөө · бэлэг'],
+   ['🚗 Ойр үйлчилгээ   ⏱ Урьдчилан захиалах',''],
+   ['🆘 Тусламж   📚 Зөвлөгөө',''],
+   ['🛒 Захиалга #1204 — Бэлэн боллоо','Ундрага дэлгүүр · авах код 4471'],
+   ['⚠️ ТТ–ГС 118 км — зам муудсан','2 цагийн өмнө · 14 хүн баталгаажуулсан']],
+  d:['Байршил + цаг агаар + шуургын анхааруулга','<b>Дараалал widget</b> — Гашуунсухайт, Тавантолгой, Цагаанхад','Нэгдсэн хайлт (бизнес + бараа + зөвлөгөө + бэлэг + зар)','Хурдан үйлдэл 4 товч','Идэвхтэй захиалгын баннер','Замын анхааруулга карт','Өндөр үнэлгээтэй үйлчилгээ','Шинэ бэлэг / шинэ зөвлөгөө','Сурталчилгааны слот (орлого)','Албан мэдэгдэл <span class="pill p2">R2</span>','Хувийн санал (AI) <span class="pill p3">R3</span>']},
+ {id:'road',ic:'🛣',t:'Зам',title:'Зам — ТТ → Гашуунсухайт',
+  items:[
+   ['🗺 Газрын зураг','давхарга: бизнес · ШТС · засвар · зогсоол · осол'],
+   ['📍 Миний чиглэл: ТТ → ГС (240 км)','өөрчлөх'],
+   ['142 км — Цогтцэций','18 үйлчилгээ · 6 нээлттэй'],
+   ['⛽ 96 км — ШТС Магнай','АИ-92 2,890₮ · дизель байгаа'],
+   ['☕ 142 км — Говь цайны газар','халуун ус · ариун цэвэр · ⭐4.6'],
+   ['🚧 Дараалал: ГС ~4ц 20м','«Би дараалалд орлоо» тэмдэглэх'],
+   ['👥 Хамт явах — 3 жолооч ижил чиглэлд','R2']],
+  d:['Газрын зураг + давхарга сонголт','Миний чиглэл (5 чиглэл)','Зам дагуух үйлчилгээ — км-ээр эрэмбэлсэн','Урьдчилан захиалах','<b>Дараалал &amp; ачилт</b> — хүлээлт, машины тоо','Замын нөхцөл мэдээлэх (Waze загвар) + баталгаажуулах санал','<b>Шатахуун</b> — ШТС, үнэ, дизель байгаа эсэх','<b>Зогсоол &amp; амралт</b> — цай, буудал, халуун ус, ариун цэвэр','Geofence сануулга <span class="pill p2">R2</span>','Convoy / хамт явах <span class="pill p2">R2</span>','Live location share <span class="pill p2">R2</span>','Чиглүүлэлт (Google/Yandex/2GIS)','Оффлайн газрын зураг <span class="pill p2">R2</span>','Жин хэмжилтийн цэг <span class="pill p2">R2</span>','Хилийн/гаалийн мэдээлэл <span class="pill p3">R3</span>']},
+ {id:'order',ic:'🛒',t:'Захиалга',title:'Захиалга',
+  items:[
+   ['🍜 Хоол  🥫 Хүнс  🔧 Сэлбэг  🛞 Дугуй','🚿 Угаалга  🛏 Буудал  💊 Эмийн сан'],
+   ['Ундрага дэлгүүр ⭐4.7 (128)','Цогтцэций · 142 км · нээлттэй 08–22'],
+   ['Захиалгын төрөл','① Очиж авах ② Зам дагуух ③ Хүргэлт'],
+   ['⏱ «Би 18:30 цагт ирнэ»','зам дагуух урьдчилсан захиалга'],
+   ['Нийт 47,500₮','ROAD шимтгэл 5% багтсан'],
+   ['💳 QPay QR / deeplink','төлөөд eBarimt автоматаар'],
+   ['🏢 B2B булан','уурхай/компанийн эрхтэй  R3']],
+  d:['Ангилал (11)','Хайлт + шүүлтүүр (зай, үнэлгээ, нээлттэй, хүргэлттэй)','Бизнесийн хуудас','Бараа/үйлчилгээний карт','Сагс + ROAD шимтгэл ил харуулах','<b>Захиалгын 3 төрөл</b> — Click&amp;Collect / Зам дагуух / Хүргэлт','Захиалгын төлөв (5 шат)','Төлбөр — QPay QR/deeplink → callback → verify → PAID','eBarimt','Авах QR/код, чат, цуцлах','Үнэлгээ өгөх','Дахин захиалах <span class="pill p2">R2</span>','Хүргэлт <span class="pill p2">R2</span>','B2B tender/гэрээ <span class="pill p3">R3</span>','Хямдрал/купон <span class="pill p2">R2</span>']},
+ {id:'comm',ic:'👥',t:'Community',title:'Community',
+  items:[
+   ['📚 ROAD Зөвлөгөө','🚗 Машин · 🛣 Зам · 🆘 Яаралтай · 📋 Ажил'],
+   ['«Замд дугуй хагарвал яах вэ?»','7 алхам · 👍 2,481 хэрэгтэй'],
+   ['👨‍🔧 Бат — 15 жил жолоодсон ✓','Verified driver'],
+   ['❓ Асуулт–Хариулт','«Хүйтэнд асаахгүй бол?» — 12 хариулт'],
+   ['🎁 Бэлэглэнэ','Michelin 265/65 R17 — 2 ширхэг · Үнэгүй'],
+   ['📢 Зар · ажлын байр · микро логистик','R2'],
+   ['📋 Аяллын өмнөх checklist','дугуй · тормоз · тос · гэрэл · запас']],
+  d:['<b>ROAD Зөвлөгөө</b> — 6 ангилал, алхамчилсан заавар','Зохиогч харуулах + verified тэмдэг','«Хэрэгтэй» үнэлгээ, эрэмбэлэлт','Асуулт–Хариулт, шилдэг хариулт','<b>Оффлайн татах</b> — сүлжээгүй үед унших','Модерац + «мэргэжлийн тусламж шаардлагатай» анхааруулга','Аяллын өмнөх checklist','Видео зөвлөгөө <span class="pill p2">R2</span>','Contribution оноо, түвшин <span class="pill p2">R2</span>','<b>🎁 Бэлэглэнэ</b> — зар, ойр хайлт, авах хүсэлт, төлөв, report','Тусламж хүсэх (эсрэг чиглэл) <span class="pill p2">R2</span>','Зар: худалдах/ажил/микро логистик <span class="pill p2">R2</span>','Орон нутгийн мэдээ, албан мэдэгдэл','Санал хүсэлт → эрх бүхий байгууллага <span class="pill p2">R2</span>']},
+ {id:'me',ic:'👤',t:'Би',title:'Би',
+  items:[
+   ['Дорж · Жолооч ✓ Verified','Contribution 340 оноо · Ахлах түвшин'],
+   ['🚛 Howo · 1234 УБА','дугуй 12R22.5 · дизель'],
+   ['⚠️ Даатгал 24 хоногийн дараа дуусна','сануулга'],
+   ['📖 Аяллын дэвтэр — 8 сар','24 аялал · 5,760 км · түлш 2.1 сая₮'],
+   ['🧾 Төлбөрийн түүх · eBarimt',''],
+   ['⭐ ROAD Premium','реклам байхгүй · оффлайн газрын зураг · дараалал push'],
+   ['⚙️ Тохиргоо','хэл · дата хэмнэлт · оффлайн · харанхуй горим']],
+  d:['Профайл','Баталгаажуулалт: утас (R1) → E-Mongolia/ДАН <span class="pill p2">R2</span>','Verified driver тэмдэг <span class="pill p2">R2</span>','<b>Машины профайл</b> + даатгал/оношилгооны сануулга <span class="pill p2">R2</span>','<b>Аяллын дэвтэр</b> — км, түлш, зардал, орлого <span class="pill p2">R2</span>','Миний захиалга, төлбөрийн түүх, eBarimt','Миний зөвлөгөө / бэлэг / зар','Хадгалсан (bookmark)','<b>ROAD Premium</b> <span class="pill p2">R2</span>','Мэдэгдлийн тохиргоо','Тохиргоо — хэл, дата хэмнэлт, оффлайн, харанхуй, фонт','Тусламж / FAQ / Terms / Privacy / Consent','Данс устгах хүсэлт (хуулийн шаардлага)']},
+ {id:'sos',ic:'🆘',t:'SOS',title:'🆘 Тусламж',
+  items:[
+   ['Юу тохиолдсон бэ?',''],
+   ['🛞 Дугуй хагарсан','🔋 Аккумулятор суусан'],
+   ['⛽ Түлш дууссан','🔧 Машин эвдэрсэн'],
+   ['🚙 Чирэгч хэрэгтэй','🧰 Засварчин хэрэгтэй'],
+   ['📍 Байршил илгээгдэнэ','ТТ–ГС 118 км · автомат'],
+   ['Хамгийн ойр тусламж','3.2 км Дугуй засвар · 7.5 км Авто засвар · 12 км Чирэгч'],
+   ['☎️ 103 · 105 · 102 · Гэр бүл','']],
+  d:['Асуудлын 7 төрөл','Байршил автоматаар (GPS + км тэмдэг)','Ойрын тусламж + шууд залгах','<b>Радиус дуудлага</b> — 20 км дотор жолоочид push <span class="pill p2">R2</span>','Байршил хуваалцах линк (SMS-ээр)','Яаралтай дугаар 103/105/102/эргүүл/гэр бүл','Ослын мэдээлэл илгээх (зураг, тайлбар) <span class="pill p2">R2</span>','Оператор хүлээн авах, статус <span class="pill p2">R2</span>','<b>SMS fallback</b> — интернэтгүй үед <span class="pill p2">R2</span>','103 интеграци <span class="pill p3">R3</span>']}
+];
+const tabsEl=document.getElementById('ptabs'),bodyEl=document.getElementById('pbody'),detEl=document.getElementById('detail');
+function render(id){
+  const t=TABS.find(x=>x.id===id);
+  bodyEl.innerHTML='<div class="ptitle">'+t.title+'</div>'+t.items.map(i=>'<div class="pitem"><b>'+i[0]+'</b>'+(i[1]?'<span class="t">'+i[1]+'</span>':'')+'</div>').join('');
+  detEl.innerHTML='<h4>'+t.title+' — бүх боломж</h4><ul>'+t.d.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  document.querySelectorAll('.ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
+}
+tabsEl.innerHTML=TABS.filter(t=>t.id!=='sos').map(t=>'<button data-id="'+t.id+'"><span class="ic">'+t.ic+'</span>'+t.t+'</button>').join('');
+tabsEl.querySelectorAll('button').forEach(b=>b.onclick=()=>render(b.dataset.id));
+document.getElementById('sosBtn').onclick=()=>render('sos');
+render('home');
+
+/* ---------- features ---------- */
+const F=[
+['M1.2','Дараалал & ачилтын хүлээлт','Нүүрсний жолоочийн №1 өвдөлт. Crowdsource → дараа нь уурхай/гаальтай мэдээлэл солилцох','Нүүр','R1'],
+['M1.1','Байршил, цаг агаар, шуургын анхааруулга','Говьд амь насны асуудал. Гуравдагч API','Нүүр','R1'],
+['M1.3','Нэгдсэн хайлт','Бизнес + бараа + зөвлөгөө + бэлэг + зар','Нүүр','R1'],
+['M1.9','Сурталчилгааны слот','Premium бизнесийн баннер — орлого','Нүүр','R1'],
+['M1.10','Албан мэдэгдэл','Орон нутаг/уурхай/ЦГ-ын албан мэдээ','Нүүр','R2'],
+['M1.11','Хувийн санал (AI)','Түүх, байршил, чиглэл дээр суурилсан','Нүүр','R3'],
+['M2.1','Газрын зураг + давхарга','Бизнес, ШТС, засвар, зогсоол, осол, хаалт','Зам','R1'],
+['M2.2','Миний чиглэл','ТТ→ГС / Цагаанхад / Ханги / Чойр / УБ','Зам','R1'],
+['M2.3','Зам дагуух үйлчилгээ','км-ээр эрэмбэлсэн жагсаалт','Зам','R1'],
+['M2.4','Урьдчилан захиалах','«Би 2 цагийн дараа ирнэ»','Зам','R1'],
+['M2.6','Замын нөхцөл мэдээлэх','Осол, хаалт, муу зам, цагдаа (Waze загвар)','Зам','R1'],
+['M2.7','Шатахуун — ШТС, үнэ','Түлш = зардлын 40–50%. Өдөр бүр сонирхоно','Зам','R1'],
+['M2.8','Зогсоол & амралт','Цай, буудал, халуун ус, ариун цэвэр, аюулгүй зогсоол','Зам','R1'],
+['M2.12','Чиглүүлэлт','Google/Yandex/2GIS руу дамжуулах','Зам','R1'],
+['M2.9','Geofence сануулга','«5 км-ийн дараа сэлбэгийн дэлгүүр»','Зам','R2'],
+['M2.10','Convoy / хамт явах','Шөнө, өвөл аюулгүй байдал','Зам','R2'],
+['M2.11','Live location share','Гэр бүл/менежерт хугацаатай линк','Зам','R2'],
+['M2.13','Оффлайн газрын зураг','Чиглэлийн зурвасыг татах (Premium)','Зам','R2'],
+['M2.14','Жин хэмжилтийн цэг','Байршил, цаг, дундаж хүлээлт','Зам','R2'],
+['M2.15','Хилийн/гаалийн мэдээлэл','Ажиллах цаг, баримт бичгийн шаардлага','Зам','R3'],
+['M3.1','Бизнесийн каталог + ангилал','11 ангилал','Захиалга','R1'],
+['M3.2','Хайлт + шүүлтүүр','Зай, үнэлгээ, нээлттэй, хүргэлттэй','Захиалга','R1'],
+['M3.3','Бизнесийн хуудас','Зураг, цаг, утас, байршил, үнэлгээ, бараа','Захиалга','R1'],
+['M3.5','Сагс','ROAD шимтгэлийг ил харуулна','Захиалга','R1'],
+['M3.6','Click & Collect','Урьдчилан захиалж очиж авах','Захиалга','R1'],
+['M3.7','Захиалгын төлөв (5 шат)','Шинэ → Хүлээн авсан → Бэлтгэж буй → Бэлэн → Авсан','Захиалга','R1'],
+['M3.8','Цахим төлбөр (QPay)','Invoice → QR/deeplink → callback → verify → PAID','Захиалга','R1'],
+['M3.9','eBarimt','Төлбөрийн дараа автомат баримт','Захиалга','R1'],
+['M3.11','Үнэлгээ, сэтгэгдэл','1–5 од + текст, дундаж автомат','Захиалга','R1'],
+['M3.12','Дахин захиалах','1 товшилтоор өмнөхийг давтах','Захиалга','R2'],
+['M3.13','Хүргэлт','Гэр, кемп, зам дээр + хүргэгчийн байршил','Захиалга','R2'],
+['M3.16','Хямдрал / купон','Promo код','Захиалга','R2'],
+['M3.14','B2B булан — tender, гэрээт нийлүүлэлт','Уурхайн кемпийн хангамж','Захиалга','R3'],
+['M3.15','Урьдчилгаа / хэсэгчилсэн төлбөр','30% урьдчилгаа','Захиалга','R3'],
+['M4.1','ROAD Зөвлөгөө — алхамчилсан заавар','6 ангилал, зураг/видео-той','Community','R1'],
+['M4.3','«Хэрэгтэй» үнэлгээ','👍 тоо, эрэмбэлэлт','Community','R1'],
+['M4.4','Асуулт–Хариулт','Шилдэг хариулт тэмдэглэх','Community','R1'],
+['M4.5','Оффлайн зөвлөгөө','Сүлжээгүй үед унших','Community','R1'],
+['M4.6','Модерац','Аюултай зөвлөгөөг хянах, «мэргэжлийн тусламж» анхааруулга','Community','R1'],
+['M4.7','Аяллын өмнөх checklist','Дугуй, тормоз, тос, гэрэл, запас, багаж, галын хор','Community','R1'],
+['M4.11','🎁 Бэлэглэнэ','Үнэгүй өгөх community зар','Community','R1'],
+['M4.14','Авах хүсэлт + сонголт','Идэвхтэй → Хүсэлттэй → Олгосон → Хаасан','Community','R1'],
+['M4.16','Report / модерац','Залилан, далд худалдаа, хууль бус','Community','R1'],
+['M4.22','Орон нутгийн мэдээ','Feed','Community','R1'],
+['M4.8','Видео зөвлөгөө','Дата хэмнэх горимтой','Community','R2'],
+['M4.9','Contribution оноо, түвшин','Шинэ → Туршлагатай → Ахлах → Багш','Community','R2'],
+['M4.10','Top contributors','Сарын шилдэг зөвлөгч + урамшуулал','Community','R2'],
+['M4.17','Талархал','Авсан хүн тэмдэглэл үлдээх','Community','R2'],
+['M4.18','Тусламж хүсэх','«Надад ... хэрэгтэй байна»','Community','R2'],
+['M4.19','Зар — худалдах/авах','Машин, сэлбэг, дугуй','Community','R2'],
+['M4.20','Зар — ажлын байр','Жолооч, засварчин, тогооч','Community','R2'],
+['M4.21','Микро логистик','«Цогтцэций рүү жижиг ачаа авч явах хүн»','Community','R2'],
+['M4.24','Санал хүсэлт → эрх бүхий байгууллага','Гео-Интегрэйшн даалгаварын «эргэх холбоо»','Community','R2'],
+['M5.1','Профайл + утасны баталгаажуулалт','OTP','Би','R1'],
+['M5.6','Миний захиалга + түүх','','Би','R1'],
+['M5.7','Төлбөрийн түүх + eBarimt','','Би','R1'],
+['M5.9','Хадгалсан (bookmark)','Бизнес, зөвлөгөө','Би','R1'],
+['M5.12','Тохиргоо','Хэл, дата хэмнэлт, оффлайн, харанхуй, фонт','Би','R1'],
+['M5.15','Данс устгах хүсэлт','Хувийн мэдээллийн хуулийн шаардлага','Би','R1'],
+['M5.2','E-Mongolia / ДАН танилт','Хуурамч бүртгэлээс сэргийлэх','Би','R2'],
+['M5.3','Verified driver','Жолооны үнэмлэх / компанийн батламж','Би','R2'],
+['M5.4','Машины профайл + сануулга','Даатгал, оношилгоо, тос солих км','Би','R2'],
+['M5.5','Аяллын дэвтэр','км, түлш, зардал, орлого, экспорт','Би','R2'],
+['M5.10','ROAD Premium','Реклам байхгүй, оффлайн зураг, дараалал push','Би','R2'],
+['M6.1','SOS — 7 төрлийн асуудал','Дугуй, аккумулятор, түлш, эвдрэл, чирэгч, засварчин, осол','SOS','R1'],
+['M6.3','Ойрын тусламж + залгах','«3.2 км — Дугуй засвар»','SOS','R1'],
+['M6.5','Байршил хуваалцах линк','SMS-ээр','SOS','R1'],
+['M6.6','Яаралтай дугаар','103 · 105 · 102 · эргүүл · гэр бүл','SOS','R1'],
+['M6.4','Радиус дуудлага','20 км дотор жолоочид push','SOS','R2'],
+['M6.7','Ослын мэдээлэл + оператор','Зураг, тайлбар, статус','SOS','R2'],
+['M6.9','SMS fallback','Интернэтгүй үед SOS','SOS','R2'],
+['M6.10','103 интеграци','Тусдаа гэрээ/протокол','SOS','R3'],
+['M7.1','Fleet веб панель','Тээврийн компанийн менежерт','B2B','R2'],
+['M7.2','Кемпийн хангамжийн tender','Хэрэгцээ → санал → сонголт → гэрээ','B2B','R3'],
+['M7.3','Тогтмол захиалга (subscription order)','Кемпэд 7 хоног бүр','B2B','R3'],
+['M7.4','Байгууллагын нэхэмжлэх / тооцоо','Сарын тооцоо, eBarimt','B2B','R3'],
+['M7.5','Ачилтын хуваарь мэдээлэл','Уурхайгаас жолооч руу шууд','B2B','R2'],
+['M7.6','Нийлүүлэгчийн үнэлгээ','Хугацаа, чанар, гэрээний биелэлт','B2B','R3'],
+['M8.1','Админ веб (22 модуль)','Dashboard-аас audit log хүртэл','Систем','R1'],
+['M8.2','Аналитик, funnel, retention','Event schema эхнээс нь','Систем','R2'],
+['M8.3','Feature flag','Функцийг бүсээр/хувиар нээх','Систем','R1'],
+['M8.4','Гуравдагч талын API нээх','Партнер интеграци','Систем','R3'],
+['M8.5','Олон хэл (EN → CN)','i18n эхнээс нь','Систем','R3']
+];
+let fr='all',fm='all';
+const rels=['all','R1','R2','R3'], mens=['all','Нүүр','Зам','Захиалга','Community','Би','SOS','B2B','Систем'];
+document.getElementById('frel').innerHTML=rels.map(r=>'<button data-v="'+r+'"'+(r==='all'?' class="on"':'')+'>'+(r==='all'?'Бүх хувилбар':r)+'</button>').join('');
+document.getElementById('fmen').innerHTML=mens.map(m=>'<button data-v="'+m+'"'+(m==='all'?' class="on"':'')+'>'+(m==='all'?'Бүх цэс':m)+'</button>').join('');
+function draw(){
+  const rows=F.filter(f=>(fr==='all'||f[4]===fr)&&(fm==='all'||f[3]===fm));
+  document.getElementById('ftbody').innerHTML=rows.map(f=>{
+    const cls=f[4]==='R1'?'p0':f[4]==='R2'?'p1':'p2';
+    return '<tr><td><code>'+f[0]+'</code></td><td><b>'+f[1]+'</b></td><td style="color:var(--tx2)">'+f[2]+'</td><td style="color:var(--tx3)">'+f[3]+'</td><td><span class="pill '+cls+'">'+f[4]+'</span></td></tr>';
+  }).join('');
+  document.getElementById('fcount').textContent=rows.length+' / '+F.length+' боломж';
+}
+document.querySelectorAll('#frel button').forEach(b=>b.onclick=()=>{fr=b.dataset.v;document.querySelectorAll('#frel button').forEach(x=>x.classList.remove('on'));b.classList.add('on');draw();});
+document.querySelectorAll('#fmen button').forEach(b=>b.onclick=()=>{fm=b.dataset.v;document.querySelectorAll('#fmen button').forEach(x=>x.classList.remove('on'));b.classList.add('on');draw();});
+draw();
+
+/* ---------- screens ---------- */
+const S=[['S01','Splash','—','R1'],['S02','Onboarding (3 слайд)','—','R1'],['S03','Утасны дугаар','Auth','R1'],['S04','OTP баталгаажуулалт','Auth','R1'],['S05','Профайл үүсгэх','Auth','R1'],['S06','Зөвшөөрөл (байршил, мэдэгдэл)','Auth','R1'],
+['S07','Нүүр','Нүүр','R1'],['S08','Нэгдсэн хайлт + үр дүн','Нүүр','R1'],
+['S09','Газрын зураг','Зам','R1'],['S10','Чиглэл сонгох','Зам','R1'],['S11','Зам дагуух үйлчилгээ','Зам','R1'],['S12','Дараалал & ачилт','Зам','R1'],['S13','Замын нөхцөл мэдээлэх','Зам','R1'],['S14','Шатахуун / ШТС','Зам','R1'],['S15','Зогсоол & амралт','Зам','R1'],
+['S16','Каталог / ангилал','Захиалга','R1'],['S17','Бизнесийн хуудас','Захиалга','R1'],['S18','Бараа дэлгэрэнгүй','Захиалга','R1'],['S19','Сагс','Захиалга','R1'],['S20','Захиалга баталгаажуулах','Захиалга','R1'],['S21','Төлбөр (QR/deeplink)','Захиалга','R1'],['S22','Төлбөрийн үр дүн','Захиалга','R1'],['S23','Захиалгын дэлгэрэнгүй','Захиалга','R1'],['S24','Миний захиалгууд','Захиалга','R1'],['S25','Үнэлгээ өгөх','Захиалга','R1'],
+['S26','ROAD Зөвлөгөө — нүүр','Community','R1'],['S27','Зөвлөгөөний нийтлэл','Community','R1'],['S28','Q&A жагсаалт','Community','R1'],['S29','Асуулт / хариулт','Community','R1'],['S30','Аяллын checklist','Community','R1'],['S31','Бэлэглэнэ жагсаалт','Community','R1'],['S32','Бэлгийн дэлгэрэнгүй','Community','R1'],['S33','Бэлэг нийтлэх','Community','R1'],['S34','Зар (жагсаалт/нийтлэх)','Community','R2'],['S35','Мэдээ / албан мэдэгдэл','Community','R1'],['S36','Жолоочийн нийтийн профайл','Community','R2'],
+['S37','Би — профайл','Би','R1'],['S38','Машины профайл','Би','R2'],['S39','Аяллын дэвтэр','Би','R2'],['S40','Төлбөрийн түүх / eBarimt','Би','R1'],['S41','Хадгалсан','Би','R1'],['S42','ROAD Premium','Би','R2'],['S43','Мэдэгдэл','Би','R1'],['S44','Тохиргоо','Би','R1'],['S45','Тусламж / Terms / Privacy','Би','R1'],
+['S46','SOS — асуудал сонгох','SOS','R1'],['S47','SOS — ойрын тусламж','SOS','R1'],['S48','SOS — байршил / статус','SOS','R1'],
+['S49','Бизнесийн эзний хяналт','Business','R1'],['S50','Оффлайн горим','Систем','R1']];
+document.getElementById('screens').innerHTML='<table><thead><tr><th style="width:70px">Код</th><th>Дэлгэц</th><th style="width:130px">Цэс</th><th style="width:70px">Хувилбар</th></tr></thead><tbody>'+
+ S.map(s=>'<tr><td><code>'+s[0]+'</code></td><td>'+s[1]+'</td><td style="color:var(--tx3)">'+s[2]+'</td><td><span class="pill '+(s[3]==='R1'?'p0':'p1')+'">'+s[3]+'</span></td></tr>').join('')+'</tbody></table>';
+
+/* ---------- admin ---------- */
+const A=[['Dashboard','хэрэглэгч, захиалга, төлбөр, GMV, SOS, дараалал'],['Хэрэглэгч','жагсаалт, эрх, verified, блок, лог'],['Бизнес','бүртгэл, баталгаажуулалт, ангилал, premium'],['Бараа/үйлчилгээ','жагсаалт, зураг, үнэ, нөөц'],['Захиалга','төлөв, маргаан, цуцлалт, буцаалт'],['Төлбөр','transaction, settlement, шимтгэл, refund, eBarimt'],['Үнэлгээ/сэтгэгдэл','модерац'],['ROAD Зөвлөгөө','CMS: ангилал, нийтлэл, зохиогч, баталгаажуулалт'],['Асуулт–Хариулт','модерац'],['Бэлэглэнэ','зар, хүсэлт, report'],['Зар','модерац, тодруулга'],['Зам','чиглэл, POI, дараалал цэг, ШТС, зогсоол'],['Дараалал','мэдээллийн эх сурвалж, баталгаажуулалт'],['Мэдээ/Мэдэгдэл','feed, баннер, push кампанит ажил'],['Сурталчилгаа','слот, кампанит ажил, тоолуур, нэхэмжлэх'],['B2B','уурхай, тендер, гэрээ, нийлүүлэгч (R3)'],['SOS/Осол','дуудлага, статус, оператор'],['Fleet','тээврийн компани, машин, жолооч (R2)'],['Аналитик','funnel, retention, cohort, орлого'],['Тайлан','экспорт xlsx/csv'],['Тохиргоо','шимтгэл, бүс, feature flag, ангилал'],['Audit log','хэн, хэзээ, юу']];
+document.getElementById('admin').innerHTML=A.map(a=>'<div class="card"><h5>'+a[0]+'</h5><p>'+a[1]+'</p></div>').join('');
+</script>
+</body>
+</html>

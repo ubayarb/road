@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+.env
+server/.env
+npm-debug.log*
+.claude/settings.local.json
+.expo-verify*/
+road-server.tgz
+expo-*-qr.*
