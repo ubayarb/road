@@ -7,3 +7,6 @@ npm-debug.log*
 .expo-verify*/
 road-server.tgz
 expo-*-qr.*
+dist-web/
+.env.bak
+server/.env.bak

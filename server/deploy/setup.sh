@@ -65,5 +65,18 @@ echo "$DEPLOY_USER ALL=(root) NOPASSWD: /usr/local/bin/road-deploy" > /etc/sudoe
 chmod 440 /etc/sudoers.d/80-road-deploy
 visudo -cf /etc/sudoers.d/80-road-deploy
 
+echo "== 7. Web app (app.eland.mn) =="
+command -v rsync >/dev/null || apt-get install -y -qq rsync
+install -d -o "$DEPLOY_USER" -g www-data -m 755 /var/www/road-web
+if [ -d /tmp/road-web ]; then
+  cp -r /tmp/road-web/. /var/www/road-web/
+  chown -R "$DEPLOY_USER":www-data /var/www/road-web
+fi
+cp "$APP/deploy/nginx-app.eland.mn.conf" /etc/nginx/sites-available/app.eland.mn
+ln -sf /etc/nginx/sites-available/app.eland.mn /etc/nginx/sites-enabled/app.eland.mn
+nginx -t
+systemctl reload nginx
+certbot --nginx -d app.eland.mn --non-interactive --agree-tos -m "$EMAIL" --no-redirect
+
 echo "== DONE =="
 curl -sS http://$DOMAIN/api/health && echo
