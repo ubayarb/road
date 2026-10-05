@@ -233,7 +233,7 @@ function AuthScreen({ onAuthenticated }) {
     }
   };
   return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
-    <View style={styles.authLogo}><View style={styles.logoMark}><Text style={styles.logoText}>R</Text></View><Text style={styles.logoName}>ROAD</Text><Text style={styles.logoTag}>Жолоочийн өдөр тутмын хамтрагч</Text></View>
+    <View style={styles.authLogo}><View style={styles.logoMark}><Text style={styles.logoText}>R</Text></View><Text style={styles.logoName}>ROAD</Text><Text style={styles.logoTag}>Замд ганцаараа биш</Text></View>
     <Text style={styles.authTitle}>{isRegister ? 'Шинэ бүртгэл' : 'Тавтай морил'}</Text>
     <Text style={styles.authSubtitle}>{isRegister ? 'ROAD-д нэгдэж, замын мэдээллээ нэг дороос аваарай.' : 'Утасны дугаараа ашиглан нэвтэрнэ үү.'}</Text>
     <View style={styles.authTabs}><Pressable style={[styles.authTab, !isRegister && styles.authTabActive]} onPress={() => switchMode('login')}><Text style={[styles.authTabText, !isRegister && styles.authTabTextActive]}>Нэвтрэх</Text></Pressable><Pressable style={[styles.authTab, isRegister && styles.authTabActive]} onPress={() => switchMode('register')}><Text style={[styles.authTabText, isRegister && styles.authTabTextActive]}>Бүртгүүлэх</Text></Pressable></View>
