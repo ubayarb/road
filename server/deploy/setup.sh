@@ -5,7 +5,7 @@
 set -euo pipefail
 
 EMAIL="${1:?certbot email required: sudo bash setup.sh you@example.com}"
-DOMAIN=api.eland.mn
+DOMAIN=zam.xpro.mn
 APP=/opt/road/server
 cd /tmp
 
@@ -47,36 +47,31 @@ systemctl restart road-api
 sleep 3
 curl -fsS http://127.0.0.1:4000/api/health && echo
 
-echo "== 4. nginx =="
-cp "$APP/deploy/nginx-api.eland.mn.conf" /etc/nginx/sites-available/$DOMAIN
-ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
-nginx -t
-systemctl reload nginx
-
-echo "== 5. HTTPS (certbot) =="
-command -v certbot >/dev/null || apt-get install -y -qq certbot python3-certbot-nginx
-# --redirect-гүй: provider-ийн firewall 443-ыг нээх хүртэл HTTP ажилласаар байна.
-certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m "$EMAIL" --no-redirect
-
-echo "== 6. GitHub Actions deploy =="
+echo "== 4. GitHub Actions deploy hook =="
 install -m 755 -o root -g root "$APP/deploy/road-deploy.sh" /usr/local/bin/road-deploy
 DEPLOY_USER="${SUDO_USER:-administrator}"
 echo "$DEPLOY_USER ALL=(root) NOPASSWD: /usr/local/bin/road-deploy" > /etc/sudoers.d/80-road-deploy
 chmod 440 /etc/sudoers.d/80-road-deploy
 visudo -cf /etc/sudoers.d/80-road-deploy
 
-echo "== 7. Web app (app.eland.mn) =="
+echo "== 5. Web app files =="
 command -v rsync >/dev/null || apt-get install -y -qq rsync
 install -d -o "$DEPLOY_USER" -g www-data -m 755 /var/www/road-web
 if [ -d /tmp/road-web ]; then
   cp -r /tmp/road-web/. /var/www/road-web/
   chown -R "$DEPLOY_USER":www-data /var/www/road-web
 fi
-cp "$APP/deploy/nginx-app.eland.mn.conf" /etc/nginx/sites-available/app.eland.mn
-ln -sf /etc/nginx/sites-available/app.eland.mn /etc/nginx/sites-enabled/app.eland.mn
+
+echo "== 6. nginx ($DOMAIN) =="
+cp "$APP/deploy/nginx-$DOMAIN.conf" /etc/nginx/sites-available/$DOMAIN
+ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
 nginx -t
 systemctl reload nginx
-certbot --nginx -d app.eland.mn --non-interactive --agree-tos -m "$EMAIL" --no-redirect
+
+echo "== 7. HTTPS (certbot) =="
+command -v certbot >/dev/null || apt-get install -y -qq certbot python3-certbot-nginx
+# --redirect-гүй: provider-ийн firewall 443-ыг нээх хүртэл HTTP ажилласаар байна.
+certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m "$EMAIL" --no-redirect
 
 echo "== DONE =="
 curl -sS http://$DOMAIN/api/health && echo
