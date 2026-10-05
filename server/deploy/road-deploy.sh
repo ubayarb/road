@@ -22,9 +22,10 @@ chmod 600 "$APP/.env"
 DATABASE_URL=$(grep '^DATABASE_URL=' "$APP/.env" | cut -d= -f2-)
 psql -q -v ON_ERROR_STOP=1 "$DATABASE_URL" -f "$APP/db/init.sql"
 
+PORT=$(grep '^PORT=' "$APP/.env" | cut -d= -f2-)
 systemctl restart road-api
 for i in $(seq 1 10); do
-  if curl -fsS http://127.0.0.1:4000/api/health; then echo; echo "DEPLOY OK"; exit 0; fi
+  if curl -fsS "http://127.0.0.1:${PORT:-4000}/api/health"; then echo; echo "DEPLOY OK"; exit 0; fi
   sleep 2
 done
 echo "Health check failed"; journalctl -u road-api -n 30 --no-pager; exit 1

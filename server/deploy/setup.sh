@@ -7,6 +7,8 @@ set -euo pipefail
 EMAIL="${1:?certbot email required: sudo bash setup.sh you@example.com}"
 DOMAIN=zam.xpro.mn
 APP=/opt/road/server
+# 4000-ийг BelegGO API эзэлсэн тул ROAD API 4100 дээр ажиллана.
+API_PORT=4100
 cd /tmp
 
 echo "== 1. road хэрэглэгч, код =="
@@ -25,7 +27,7 @@ if [ ! -f "$APP/.env" ]; then
   sudo -u postgres psql -Atc "select 1 from pg_database where datname='road_db'" | grep -q 1 \
     || sudo -u postgres psql -qc "CREATE DATABASE road_db OWNER road_user;"
   cat > "$APP/.env" <<EOF
-PORT=4000
+PORT=$API_PORT
 HOST=127.0.0.1
 DATABASE_URL=postgresql://road_user:$DB_PASS@127.0.0.1:5432/road_db
 JWT_SECRET=$(openssl rand -hex 32)
@@ -36,6 +38,7 @@ fi
 sudo -u postgres psql -q -d road_db -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 DATABASE_URL=$(grep '^DATABASE_URL=' "$APP/.env" | cut -d= -f2-)
 psql -q "$DATABASE_URL" -f "$APP/db/init.sql"
+sed -i "s/^PORT=.*/PORT=$API_PORT/" "$APP/.env"
 chown -R road:road /opt/road
 chmod 600 "$APP/.env"
 
@@ -45,7 +48,7 @@ systemctl daemon-reload
 systemctl enable road-api >/dev/null
 systemctl restart road-api
 sleep 3
-curl -fsS http://127.0.0.1:4000/api/health && echo
+curl -fsS http://127.0.0.1:$API_PORT/api/health && echo
 
 echo "== 4. GitHub Actions deploy hook =="
 install -m 755 -o root -g root "$APP/deploy/road-deploy.sh" /usr/local/bin/road-deploy
