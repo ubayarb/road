@@ -39,4 +39,4 @@ jobs:
           ssh "$TARGET" 'sudo -n /usr/local/bin/road-deploy'
 
       - name: Public health check
-        run: curl -fsS --retry 5 --retry-delay 3 http://zam.xpro.mn/api/health
+        run: curl -fsS --retry 5 --retry-delay 3 https://zam.xpro.mn/api/health

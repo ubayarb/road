@@ -31,7 +31,7 @@ jobs:
 
       - name: Build web
         env:
-          EXPO_PUBLIC_API_URL: http://zam.xpro.mn/api
+          EXPO_PUBLIC_API_URL: https://zam.xpro.mn/api
         run: npx expo export --platform web --output-dir dist-web
 
       - name: Set up SSH
@@ -50,4 +50,4 @@ jobs:
         run: rsync -az --delete dist-web/ "$TARGET:/var/www/road-web/"
 
       - name: Public check
-        run: curl -fsS --retry 5 --retry-delay 3 -o /dev/null http://zam.xpro.mn/
+        run: curl -fsS --retry 5 --retry-delay 3 -o /dev/null https://zam.xpro.mn/
