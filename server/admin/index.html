@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ROAD Админ</title>
+<style>
+  :root {
+    --bg: #0C1118; --surface: #151D28; --surface2: #1B2633; --line: #283747;
+    --text: #F4F7FB; --muted: #99A9BA; --orange: #F5A33B; --blue: #56A9E8; --green: #57C98A; --red: #F06958;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .login form { width: min(360px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .mark { width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: var(--bg); display: grid; place-items: center; font-weight: 800; }
+  .brand b { font-size: 18px; letter-spacing: .5px; }
+  .brand span { color: var(--muted); font-size: 12px; display: block; }
+  label { display: block; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
+  input, select { width: 100%; background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; outline: none; }
+  input:focus, select:focus { border-color: var(--orange); }
+  .primary { width: 100%; margin-top: 20px; background: var(--orange); color: var(--bg); border: 0; border-radius: 10px; padding: 11px; font-weight: 700; }
+  .primary:disabled { opacity: .6; }
+  .error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+  /* Shell */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 2; }
+  header .brand { margin: 0; }
+  nav { display: flex; gap: 4px; }
+  nav button { background: none; border: 0; color: var(--muted); padding: 8px 14px; border-radius: 8px; }
+  nav button.active { background: var(--surface2); color: var(--text); }
+  .who { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+  .ghost { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+  .ghost:hover { border-color: var(--muted); }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 18px; }
+  h2 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 0 0 14px; }
+
+  /* Dashboard */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .stat .value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .label { color: var(--muted); font-size: 12px; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 160px; }
+  .bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+  .bar i { display: block; width: 100%; max-width: 28px; background: var(--orange); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar small { color: var(--muted); font-size: 10px; }
+  .bar em { font-style: normal; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .types { display: grid; gap: 10px; }
+  .type-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+  .type-row .track { grid-column: 1 / -1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .type-row .track i { display: block; height: 100%; background: var(--blue); }
+
+  /* Users */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; }
+  .toolbar select { width: auto; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-size: 12px; font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  .user { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--surface2); display: grid; place-items: center; overflow: hidden; color: var(--muted); font-weight: 700; font-size: 12px; flex: none; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: var(--surface2); color: var(--muted); }
+  .pill.green { color: var(--green); background: rgba(87, 201, 138, .12); }
+  .pill.red { color: var(--red); background: rgba(240, 105, 88, .12); }
+  .pill.orange { color: var(--orange); background: rgba(245, 163, 59, .12); }
+  .actions { display: flex; gap: 6px; }
+  .actions button { font-size: 12px; padding: 4px 10px; }
+  .actions .danger { color: var(--red); }
+  .pager { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; color: var(--muted); font-size: 13px; }
+  .pager div { display: flex; gap: 6px; }
+  .empty { text-align: center; color: var(--muted); padding: 32px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 10px; }
+
+  @media (max-width: 760px) {
+    header { flex-wrap: wrap; padding: 12px 16px; }
+    nav { order: 3; width: 100%; }
+    main { padding: 16px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<section class="login" id="login">
+  <form id="login-form">
+    <div class="brand"><div class="mark">R</div><div><b>ROAD</b><span>Админ</span></div></div>
+    <label for="phone">Утасны дугаар</label>
+    <input id="phone" type="tel" autocomplete="username" required>
+    <label for="password">Нууц үг</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <button class="primary" type="submit">Нэвтрэх</button>
+    <div class="error" id="login-error"></div>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand"><div class="mark">R</div><div><b>ROAD</b><span>Админ</span></div></div>
+    <nav>
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="users">Хэрэглэгч</button>
+    </nav>
+    <div class="who"><span id="who"></span><button class="ghost" id="logout">Гарах</button></div>
+  </header>
+
+  <main>
+    <section id="view-dashboard">
+      <h1>Dashboard</h1>
+      <div class="stats" id="stats"></div>
+      <div class="grid2">
+        <div class="card"><h2>Сүүлийн 14 хоногийн бүртгэл</h2><div class="bars" id="daily"></div></div>
+        <div class="card"><h2>Хэрэглэгчийн төрөл</h2><div class="types" id="types"></div></div>
+      </div>
+    </section>
+
+    <section id="view-users" class="hidden">
+      <h1>Хэрэглэгч</h1>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Утас, нэр, имэйлээр хайх">
+        <select id="status">
+          <option value="">Бүгд</option>
+          <option value="admin">Админ</option>
+          <option value="blocked">Блоклогдсон</option>
+          <option value="incomplete">Профайл дутуу</option>
+        </select>
+      </div>
+      <div class="card table-wrap">
+        <table>
+          <thead><tr><th>Хэрэглэгч</th><th>Утас</th><th>Төрөл</th><th>Төлөв</th><th>Бүртгүүлсэн</th><th></th></tr></thead>
+          <tbody id="users"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span id="page-info"></span><div><button class="ghost" id="prev">‹ Өмнөх</button><button class="ghost" id="next">Дараах ›</button></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+const API = '/api';
+const PAGE_SIZE = 25;
+const TYPE_LABELS = { driver: 'Жолооч', local: 'Орон нутгийн иргэн', miner: 'Уурхайн ажилтан', none: 'Сонгоогүй' };
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('mn-MN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmtPhone = (phone) => phone.replace(/^(\+976)?(\d{4})(\d{4})$/, (_, cc, a, b) => `${cc ? `${cc} ` : ''}${a} ${b}`);
+
+let session = null;
+try { session = JSON.parse(sessionStorage.getItem('road-admin') || 'null'); } catch {}
+const users = { offset: 0, total: 0, q: '', status: '' };
+
+async function api(path, { method = 'GET', body } = {}) {
+  const response = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(session && { Authorization: `Bearer ${session.token}` }) },
+    body: body && JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401 || (response.status === 403 && session)) { logout(); throw new Error(data.message || 'Дахин нэвтэрнэ үү.'); }
+  if (!response.ok) throw new Error(data.message || 'Серверийн алдаа гарлаа.');
+  return data;
+}
+
+function toast(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.remove('hidden');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+function showApp() {
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('who').textContent = [session.user.lastName, session.user.name].filter(Boolean).join(' ') || fmtPhone(session.user.phone);
+  show('dashboard');
+}
+
+function logout() {
+  session = null;
+  try { sessionStorage.removeItem('road-admin'); } catch {}
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+}
+
+function show(view) {
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  $('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+  $('view-users').classList.toggle('hidden', view !== 'users');
+  (view === 'dashboard' ? loadStats() : loadUsers()).catch((e) => toast(e.message));
+}
+
+async function loadStats() {
+  const { totals, byType, daily } = await api('/admin/stats');
+  const cards = [
+    ['Нийт хэрэглэгч', totals.total], ['Профайл гүйцээсэн', totals.complete], ['Өнөөдөр шинэ', totals.today],
+    ['Сүүлийн 7 хоног', totals.week], ['Админ', totals.admins], ['Блоклогдсон', totals.blocked],
+  ];
+  $('stats').innerHTML = cards.map(([label, value]) => `<div class="card stat"><div class="value">${value.toLocaleString()}</div><div class="label">${label}</div></div>`).join('');
+  const max = Math.max(1, ...daily.map((d) => d.count));
+  $('daily').innerHTML = daily.map((d) => `<div class="bar" title="${d.day}: ${d.count}"><em>${d.count || ''}</em><i style="height:${(d.count / max) * 100}%"></i><small>${d.day.slice(8)}</small></div>`).join('');
+  const typeMax = Math.max(1, ...byType.map((t) => t.count));
+  $('types').innerHTML = byType.map((t) => `<div class="type-row"><span>${esc(TYPE_LABELS[t.type] || t.type)}</span><b>${t.count}</b><div class="track"><i style="width:${(t.count / typeMax) * 100}%"></i></div></div>`).join('') || '<div class="sub">Өгөгдөл алга</div>';
+}
+
+async function loadUsers() {
+  const params = new URLSearchParams({ q: users.q, status: users.status, limit: PAGE_SIZE, offset: users.offset });
+  const data = await api(`/admin/users?${params}`);
+  users.total = data.total;
+  $('users').innerHTML = data.users.map(userRow).join('') || '<tr><td colspan="6" class="empty">Хэрэглэгч олдсонгүй</td></tr>';
+  const from = data.total ? users.offset + 1 : 0;
+  $('page-info').textContent = `${from}–${users.offset + data.users.length} / ${data.total}`;
+  $('prev').disabled = users.offset === 0;
+  $('next').disabled = users.offset + PAGE_SIZE >= data.total;
+}
+
+function userRow(u) {
+  const fullName = [u.lastName, u.name].filter(Boolean).join(' ');
+  const initials = (u.name || u.phone || '?').slice(0, 1).toUpperCase();
+  const avatar = u.avatarPath ? `<img src="${API}${esc(u.avatarPath)}" alt="">` : esc(initials);
+  const status = [
+    u.blockedAt ? '<span class="pill red">Блоклогдсон</span>' : u.profileComplete ? '<span class="pill green">Идэвхтэй</span>' : '<span class="pill">Профайл дутуу</span>',
+    u.role === 'admin' ? '<span class="pill orange">Админ</span>' : '',
+  ].join(' ');
+  const self = u.id === session.user.id;
+  const actions = self ? '<span class="sub">Та өөрөө</span>' : `
+    <button class="ghost ${u.blockedAt ? '' : 'danger'}" data-id="${u.id}" data-blocked="${!u.blockedAt}">${u.blockedAt ? 'Нээх' : 'Блоклох'}</button>
+    <button class="ghost" data-id="${u.id}" data-role="${u.role === 'admin' ? 'user' : 'admin'}">${u.role === 'admin' ? 'Админ хасах' : 'Админ болгох'}</button>`;
+  return `<tr>
+    <td><div class="user"><div class="avatar">${avatar}</div><div>${esc(fullName) || '<span class="sub">Нэргүй</span>'}<div class="sub">${esc(u.email || '')}</div></div></div></td>
+    <td>${esc(fmtPhone(u.phone))}</td>
+    <td>${esc(TYPE_LABELS[u.userType] || '—')}</td>
+    <td>${status}</td>
+    <td>${fmtDate(u.createdAt)}</td>
+    <td><div class="actions">${actions}</div></td>
+  </tr>`;
+}
+
+$('login-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = event.submitter;
+  $('login-error').textContent = '';
+  button.disabled = true;
+  try {
+    const data = await api('/auth/login', { method: 'POST', body: { phone: $('phone').value, password: $('password').value } });
+    if (data.user.role !== 'admin') throw new Error('Энэ бүртгэлд админ эрх байхгүй байна.');
+    session = data;
+    try { sessionStorage.setItem('road-admin', JSON.stringify(session)); } catch {}
+    $('password').value = '';
+    showApp();
+  } catch (error) {
+    $('login-error').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('logout').addEventListener('click', logout);
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.view)));
+
+let searchTimer;
+$('search').addEventListener('input', (event) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { users.q = event.target.value.trim(); users.offset = 0; loadUsers().catch((e) => toast(e.message)); }, 300);
+});
+$('status').addEventListener('change', (event) => { users.status = event.target.value; users.offset = 0; loadUsers().catch((e) => toast(e.message)); });
+$('prev').addEventListener('click', () => { users.offset = Math.max(0, users.offset - PAGE_SIZE); loadUsers().catch((e) => toast(e.message)); });
+$('next').addEventListener('click', () => { users.offset += PAGE_SIZE; loadUsers().catch((e) => toast(e.message)); });
+
+$('users').addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-id]');
+  if (!button) return;
+  const body = button.dataset.role ? { role: button.dataset.role } : { blocked: button.dataset.blocked === 'true' };
+  const question = body.role ? (body.role === 'admin' ? 'Админ эрх өгөх үү?' : 'Админ эрхийг хасах уу?') : (body.blocked ? 'Энэ хэрэглэгчийг блоклох уу?' : 'Блокийг цуцлах уу?');
+  if (!confirm(question)) return;
+  button.disabled = true;
+  try {
+    await api(`/admin/users/${button.dataset.id}`, { method: 'PATCH', body });
+    toast('Хадгалагдлаа');
+    await loadUsers();
+  } catch (error) {
+    toast(error.message);
+    button.disabled = false;
+  }
+});
+
+if (session) showApp();
+</script>
+</body>
+</html>

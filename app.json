@@ -23,6 +23,21 @@
         {
           "backgroundColor": "#0C1118"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Профайлын зураг сонгохын тулд ROAD таны зургийн санд хандана.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "ROAD-д Face ID-аар хурдан нэвтрэхийн тулд таны царайг ашиглана."
+        }
       ]
     ]
   }

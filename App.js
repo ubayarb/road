@@ -1,13 +1,21 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,9 +54,22 @@ async function apiRequest(path, payload, { method = 'POST', token } = {}) {
     clearTimeout(timer);
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || 'Сервертэй холбогдоход алдаа гарлаа.');
+  if (!response.ok) throw Object.assign(new Error(data.message || 'Сервертэй холбогдоход алдаа гарлаа.'), { status: response.status });
   return data;
 }
+
+// Phone + password kept in the device keychain so a successful Face ID / fingerprint check can log in again.
+const BIOMETRIC_LOGIN_KEY = 'road.biometricLogin';
+async function biometricLabel() {
+  if (Platform.OS === 'web') return null;
+  if (!(await LocalAuthentication.hasHardwareAsync()) || !(await LocalAuthentication.isEnrolledAsync())) return null;
+  const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+  if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) return Platform.OS === 'ios' ? 'Face ID' : 'Царай таних';
+  return 'Хурууны хээ';
+}
+const loadBiometricLogin = async () => JSON.parse(await SecureStore.getItemAsync(BIOMETRIC_LOGIN_KEY) || 'null');
+const saveBiometricLogin = (phone, password) => SecureStore.setItemAsync(BIOMETRIC_LOGIN_KEY, JSON.stringify({ phone, password }));
+const clearBiometricLogin = () => SecureStore.deleteItemAsync(BIOMETRIC_LOGIN_KEY);
 
 const userTypes = [
   { id: 'driver', label: 'Жолооч' },
@@ -56,6 +77,8 @@ const userTypes = [
   { id: 'miner', label: 'Уурхайн ажилтан' },
 ];
 const userTypeLabel = (id) => userTypes.find((type) => type.id === id)?.label;
+// 99112233 -> 9911 2233; +97699112233 -> +976 9911 2233
+const formatPhone = (phone) => phone.replace(/^(\+976)?(\d{4})(\d{4})$/, (_, cc, a, b) => `${cc ? `${cc} ` : ''}${a} ${b}`);
 
 const tabs = [
   { id: 'home', icon: '⌂', label: 'Нүүр' },
@@ -180,7 +203,63 @@ function ProfileForm({ user, token, onSaved }) {
   </Card>;
 }
 
-function Profile({ onLogout, onProfileSaved, user, token }) { return <><Text style={styles.pageTitle}>Миний профайл</Text><Card style={styles.profileCard}><View style={styles.avatar}><Text style={styles.avatarText}>{(user.name || '?').charAt(0).toUpperCase()}</Text></View><View style={styles.flex}><Text style={styles.profileName}>{[user.lastName, user.name].filter(Boolean).join(' ') || 'Нэр оруулаагүй'}</Text><Text style={styles.muted}>{[user.phone, userTypeLabel(user.userType)].filter(Boolean).join(' · ')}</Text>{user.email && <Text style={styles.muted}>{user.email}</Text>}</View></Card>{!user.profileComplete && <ProfileForm user={user} token={token} onSaved={onProfileSaved} />}<SectionTitle title="Аяллын дэвтэр" /><View style={styles.conditionRow}><Card style={styles.condition}><Text style={styles.conditionValue}>12</Text><Text style={styles.statLabel}>Энэ сарын аялал</Text></Card><Card style={styles.condition}><Text style={styles.conditionValue}>4,820</Text><Text style={styles.statLabel}>Нийт км</Text></Card></View><SectionTitle title="Тохиргоо" />{['Миний захиалгууд', 'Мэдэгдэл', 'Оффлайн газрын зураг', 'Тусламж'].map(item => <Pressable key={item} onPress={() => Alert.alert(item, 'Энэ хэсэг удахгүй нээгдэнэ.')}><Card style={styles.settings}><Text style={styles.stopName}>{item}</Text><Text style={styles.routeArrow}>›</Text></Card></Pressable>)}<Button title="Гарах" kind="ghost" style={styles.topGap} onPress={onLogout} /></>;
+const AVATAR_SIZE = 512;
+
+// Square-crops the picked photo and shrinks it to a 512px JPEG (~50–100 KB) before upload.
+async function prepareAvatar(asset) {
+  const side = Math.min(asset.width, asset.height);
+  const image = await ImageManipulator.manipulate(asset.uri)
+    .crop({ originX: (asset.width - side) / 2, originY: (asset.height - side) / 2, width: side, height: side })
+    .resize({ width: AVATAR_SIZE, height: AVATAR_SIZE })
+    .renderAsync();
+  const result = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.8, base64: true });
+  return result.base64;
+}
+
+function ProfileAvatar({ user, token, onChange }) {
+  const [busy, setBusy] = useState(false);
+  const run = async (task, failTitle) => {
+    try {
+      setBusy(true);
+      await task();
+    } catch (error) {
+      Alert.alert(failTitle, error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const pickPhoto = () => run(async () => {
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 1 });
+    if (picked.canceled) return;
+    const image = await prepareAvatar(picked.assets[0]);
+    const response = await apiRequest('/me/avatar', { image }, { method: 'PUT', token });
+    onChange(response.user);
+  }, 'Зураг оруулж чадсангүй');
+  const removePhoto = () => run(async () => {
+    const response = await apiRequest('/me/avatar', {}, { method: 'DELETE', token });
+    onChange(response.user);
+  }, 'Зураг устгаж чадсангүй');
+  const onPress = () => {
+    // Alert buttons are not rendered on web, so web always goes straight to the picker.
+    if (!user.avatarPath || Platform.OS === 'web') return pickPhoto();
+    Alert.alert('Профайлын зураг', undefined, [
+      { text: 'Зураг солих', onPress: pickPhoto },
+      { text: 'Зураг устгах', style: 'destructive', onPress: removePhoto },
+      { text: 'Болих', style: 'cancel' },
+    ]);
+  };
+  return <Pressable onPress={onPress} disabled={busy} accessibilityRole="button" accessibilityLabel="Профайлын зураг солих" style={({ pressed }) => pressed && styles.pressed}>
+    <View style={styles.avatar}>
+      {user.avatarPath
+        ? <Image source={{ uri: `${API_URL}${user.avatarPath}` }} style={styles.avatarImage} />
+        : <Text style={styles.avatarText}>{(user.name || '?').charAt(0).toUpperCase()}</Text>}
+      {busy && <View style={styles.avatarBusy}><ActivityIndicator color={colors.text} /></View>}
+    </View>
+    <View style={styles.avatarBadge}><Text style={styles.avatarBadgeText}>✎</Text></View>
+  </Pressable>;
+}
+
+function Profile({ onLogout, onProfileSaved, user, token }) { return <><Text style={styles.pageTitle}>Миний профайл</Text><Card style={styles.profileCard}><ProfileAvatar user={user} token={token} onChange={onProfileSaved} /><View style={styles.flex}><Text style={styles.profileName}>{[user.lastName, user.name].filter(Boolean).join(' ') || 'Нэр оруулаагүй'}</Text>{user.phone && <Text style={styles.profilePhone}>{formatPhone(user.phone)}</Text>}{userTypeLabel(user.userType) && <Text style={styles.muted}>{userTypeLabel(user.userType)}</Text>}{user.email && <Text style={styles.muted}>{user.email}</Text>}</View></Card>{!user.profileComplete && <ProfileForm user={user} token={token} onSaved={onProfileSaved} />}<SectionTitle title="Аяллын дэвтэр" /><View style={styles.conditionRow}><Card style={styles.condition}><Text style={styles.conditionValue}>12</Text><Text style={styles.statLabel}>Энэ сарын аялал</Text></Card><Card style={styles.condition}><Text style={styles.conditionValue}>4,820</Text><Text style={styles.statLabel}>Нийт км</Text></Card></View><SectionTitle title="Тохиргоо" />{['Миний захиалгууд', 'Мэдэгдэл', 'Оффлайн газрын зураг', 'Тусламж'].map(item => <Pressable key={item} onPress={() => Alert.alert(item, 'Энэ хэсэг удахгүй нээгдэнэ.')}><Card style={styles.settings}><Text style={styles.stopName}>{item}</Text><Text style={styles.routeArrow}>›</Text></Card></Pressable>)}<Button title="Гарах" kind="ghost" style={styles.topGap} onPress={onLogout} /></>;
 }
 
 function AuthScreen({ onAuthenticated }) {
@@ -190,7 +269,11 @@ function AuthScreen({ onAuthenticated }) {
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [biometric, setBiometric] = useState(null);
   const isRegister = mode === 'register';
+  const { width: windowWidth } = useWindowDimensions();
+  const isPhone = windowWidth < 768;
+  const formWidth = isPhone ? windowWidth * 0.75 : Math.max(windowWidth / 4, 360);
   const switchMode = (nextMode) => {
     setMode(nextMode);
     setPassword('');
@@ -225,14 +308,51 @@ function AuthScreen({ onAuthenticated }) {
       const response = isRegister
         ? await apiRequest('/auth/verify-otp', { phone, code: verificationCode })
         : await apiRequest('/auth/login', { phone, password });
-      onAuthenticated(response.user, response.token);
+      if (!isRegister && biometric) await saveBiometricLogin(phone, password).catch(() => {});
+      const label = !isRegister && !biometric && await biometricLabel().catch(() => null);
+      if (!label) return onAuthenticated(response.user, response.token);
+      const finish = (enable) => async () => {
+        if (enable) await saveBiometricLogin(phone, password).catch(() => {});
+        onAuthenticated(response.user, response.token);
+      };
+      Alert.alert(`${label}-аар нэвтрэх`, `Дараагийн удаа нууц үг оруулалгүй ${label}-аар нэвтрэх үү?`, [
+        { text: 'Үгүй', style: 'cancel', onPress: finish(false) },
+        { text: 'Тийм', onPress: finish(true) },
+      ], { cancelable: false });
     } catch (error) {
       Alert.alert(isRegister ? 'Бүртгэл амжилтгүй' : 'Нэвтрэх боломжгүй', error.message);
     } finally {
       setLoading(false);
     }
   };
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
+  const biometricLogin = async (label = biometric?.label) => {
+    const check = await LocalAuthentication.authenticateAsync({ promptMessage: `ROAD-д ${label}-аар нэвтрэх`, cancelLabel: 'Болих' });
+    if (!check.success) return;
+    try {
+      setLoading(true);
+      const response = await apiRequest('/auth/login', await loadBiometricLogin());
+      onAuthenticated(response.user, response.token);
+    } catch (error) {
+      // Password changed or account gone: forget the saved login so the user types the new one.
+      if (error.status === 401) {
+        await clearBiometricLogin().catch(() => {});
+        setBiometric(null);
+      }
+      Alert.alert('Нэвтрэх боломжгүй', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    (async () => {
+      const [label, saved] = await Promise.all([biometricLabel(), loadBiometricLogin()]);
+      if (!label || !saved) return;
+      setBiometric({ label, phone: saved.phone });
+      setPhone(saved.phone);
+      biometricLogin(label);
+    })().catch(() => {});
+  }, []);
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled"><View style={[styles.authForm, { width: formWidth }, isPhone && { paddingHorizontal: 0 }]}>
     <View style={styles.authLogo}><View style={styles.logoMark}><Text style={styles.logoText}>R</Text></View><Text style={styles.logoName}>ROAD</Text><Text style={styles.logoTag}>Замд ганцаараа биш</Text></View>
     <Text style={styles.authTitle}>{isRegister ? 'Шинэ бүртгэл' : 'Тавтай морил'}</Text>
     <Text style={styles.authSubtitle}>{isRegister ? 'ROAD-д нэгдэж, замын мэдээллээ нэг дороос аваарай.' : 'Утасны дугаараа ашиглан нэвтэрнэ үү.'}</Text>
@@ -241,8 +361,9 @@ function AuthScreen({ onAuthenticated }) {
     {isRegister && <><Button title={loading ? 'Илгээж байна...' : codeSent ? 'Код дахин илгээх' : 'Баталгаажуулах код илгээх'} kind="ghost" style={styles.sendCodeButton} onPress={sendCode} disabled={loading} />{codeSent && <><Text style={styles.inputLabel}>Баталгаажуулах код</Text><TextInput value={verificationCode} onChangeText={setVerificationCode} placeholder="6 оронтой код" placeholderTextColor={colors.muted} keyboardType="number-pad" maxLength={6} style={styles.input} /></>}</>}
     {!isRegister && <><Text style={styles.inputLabel}>Нууц үг</Text><TextInput value={password} onChangeText={setPassword} placeholder="Нууц үгээ оруулна уу" placeholderTextColor={colors.muted} secureTextEntry style={styles.input} /></>}
     <Button title={loading ? 'Түр хүлээнэ үү...' : isRegister ? 'Баталгаажуулах' : 'Нэвтрэх'} onPress={submit} style={styles.authButton} disabled={loading || (isRegister && !codeSent)} />
+    {!isRegister && biometric && <Button title={`${biometric.label}-аар нэвтрэх`} kind="ghost" style={styles.sendCodeButton} onPress={() => biometricLogin()} disabled={loading} />}
     <Text style={styles.authHint}>{isRegister ? 'Код 5 минутын хугацаатай. Овог, нэр, нууц үгээ дараа нь профайл хэсэгт оруулна.' : 'Бүртгэлтэй утасны дугаар, нууц үгээ оруулна уу.'}</Text>
-  </ScrollView></SafeAreaView>;
+  </View></ScrollView></SafeAreaView>;
 }
 
 export default function App() {
@@ -269,5 +390,5 @@ function Main() {
 }
 
 const styles = StyleSheet.create({
-  safe:{flex:1,backgroundColor:colors.bg},content:{padding:20,paddingBottom:112},authContent:{padding:24,paddingTop:72,flexGrow:1},authLogo:{alignItems:'center',marginBottom:48},logoMark:{width:58,height:58,borderRadius:18,backgroundColor:colors.orange,alignItems:'center',justifyContent:'center',marginBottom:12},logoText:{color:colors.bg,fontWeight:'900',fontSize:30},logoName:{color:colors.text,fontSize:25,fontWeight:'900',letterSpacing:2},logoTag:{color:colors.muted,fontSize:12,marginTop:6},authTitle:{color:colors.text,fontSize:28,fontWeight:'900'},authSubtitle:{color:colors.muted,fontSize:13,lineHeight:20,marginTop:8,marginBottom:25},authTabs:{flexDirection:'row',backgroundColor:colors.surface,padding:4,borderRadius:12,marginBottom:25},authTab:{flex:1,alignItems:'center',paddingVertical:10,borderRadius:9},authTabActive:{backgroundColor:colors.surface2},authTabText:{color:colors.muted,fontWeight:'800',fontSize:13},authTabTextActive:{color:colors.text},inputLabel:{color:colors.text,fontWeight:'800',fontSize:12,marginBottom:7,marginTop:14},input:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line,borderRadius:12,paddingHorizontal:14,paddingVertical:13,color:colors.text,fontSize:15},sendCodeButton:{marginTop:10},authButton:{marginTop:24},authHint:{color:colors.muted,fontSize:11,lineHeight:17,textAlign:'center',marginTop:16,paddingHorizontal:12},flex:{flex:1},hero:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',paddingTop:12,paddingBottom:22},eyebrow:{color:colors.orange,fontSize:11,fontWeight:'800',letterSpacing:1.2},greeting:{color:colors.text,fontSize:27,fontWeight:'800',lineHeight:34,marginTop:7},weather:{alignItems:'center'},weatherIcon:{fontSize:28,color:colors.orange},weatherTemp:{fontSize:18,fontWeight:'800',color:colors.text},weatherText:{fontSize:11,color:colors.muted},card:{backgroundColor:colors.surface,borderColor:colors.line,borderWidth:1,borderRadius:16,padding:15,marginBottom:12},alertCard:{flexDirection:'row',gap:10,borderColor:'#774735',backgroundColor:'#211B19'},alertIcon:{color:colors.orange,fontSize:18,fontWeight:'900',marginRight:10},alertTitle:{color:colors.text,fontWeight:'800',marginBottom:3},completeBanner:{flexDirection:'row',alignItems:'center',gap:10,borderColor:colors.orange},profileForm:{marginTop:2,borderColor:colors.orange},typeRow:{flexDirection:'row',flexWrap:'wrap',gap:7},optional:{color:colors.muted,fontWeight:'600'},muted:{color:colors.muted,fontSize:12,lineHeight:18},sectionTitle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:12,marginBottom:9},sectionHeading:{color:colors.text,fontSize:17,fontWeight:'800'},action:{color:colors.blue,fontSize:13,fontWeight:'700'},rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},routeLabel:{color:colors.text,fontSize:15,fontWeight:'800',marginBottom:3},routeArrow:{color:colors.muted,fontSize:28},routeLine:{flexDirection:'row',alignItems:'center',marginVertical:16},routeDot:{width:10,height:10,borderRadius:10},routeDash:{height:2,backgroundColor:colors.line,flex:1,marginHorizontal:6},statRow:{flexDirection:'row',gap:36},statNumber:{color:colors.text,fontWeight:'800',fontSize:16},statLabel:{color:colors.muted,fontSize:11,marginTop:3},topGap:{marginTop:12},button:{borderRadius:11,paddingVertical:12,alignItems:'center'},button_primary:{backgroundColor:colors.orange},button_danger:{backgroundColor:colors.red},button_ghost:{borderColor:colors.line,borderWidth:1,backgroundColor:colors.surface2},buttonText:{color:'#17120B',fontWeight:'900',fontSize:13},ghostText:{color:colors.text},pressed:{opacity:.72},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},quick:{width:'48%',backgroundColor:colors.surface,borderColor:colors.line,borderWidth:1,borderRadius:14,padding:13,minHeight:82},quickIcon:{color:colors.orange,fontSize:20,fontWeight:'800',marginBottom:7},quickText:{color:colors.text,fontSize:12,fontWeight:'700'},newsTag:{color:colors.orange,fontSize:10,fontWeight:'900',letterSpacing:1},newsTitle:{color:colors.text,fontSize:15,fontWeight:'800',lineHeight:21,marginVertical:7},pageTitle:{color:colors.text,fontSize:27,fontWeight:'800',paddingTop:12},pageSubtitle:{color:colors.muted,fontSize:13,marginTop:4,marginBottom:10},mapCard:{height:230,padding:0,overflow:'hidden'},mapRoad:{height:190,backgroundColor:'#142333',position:'relative',overflow:'hidden'},mapPath:{position:'absolute',width:270,height:270,borderColor:colors.orange,borderWidth:8,borderRadius:150,transform:[{rotate:'-38deg'}],top:-56,left:12,borderLeftColor:'transparent',borderBottomColor:'transparent'},mapPin:{position:'absolute',top:53,left:'20%',backgroundColor:colors.text,width:26,height:26,borderRadius:15,alignItems:'center',justifyContent:'center'},mapCaption:{color:colors.muted,fontSize:11,padding:10},conditionRow:{flexDirection:'row',gap:10},condition:{flex:1},conditionValue:{fontSize:16,fontWeight:'900',color:colors.text},stop:{flexDirection:'row',alignItems:'center',gap:10},stopIcon:{height:43,width:43,borderRadius:12,alignItems:'center',justifyContent:'center'},stopName:{color:colors.text,fontSize:14,fontWeight:'800',marginBottom:3},categoryRow:{flexDirection:'row',gap:7,marginVertical:12},chip:{paddingHorizontal:13,paddingVertical:7,borderRadius:20,borderColor:colors.line,borderWidth:1},chipActive:{backgroundColor:colors.orange,borderColor:colors.orange},chipText:{color:colors.muted,fontSize:12,fontWeight:'700'},chipTextActive:{color:'#17120B'},shop:{flexDirection:'row',alignItems:'center',gap:11},shopImage:{height:56,width:56,borderRadius:12,backgroundColor:'#283540',alignItems:'center',justifyContent:'center'},shopEmoji:{fontSize:26},ready:{color:colors.green,fontWeight:'800',fontSize:11,marginTop:5},smallButton:{paddingHorizontal:11,paddingVertical:9,marginLeft:2},tipHero:{flexDirection:'row',alignItems:'center',gap:12,borderColor:'#795933',backgroundColor:'#211B17'},tipIcon:{fontSize:29},tipTitle:{color:colors.text,fontSize:15,fontWeight:'800',marginBottom:4},article:{paddingVertical:14},articleType:{color:colors.blue,fontSize:10,fontWeight:'900',letterSpacing:.8},articleTitle:{color:colors.text,fontSize:15,fontWeight:'800',marginVertical:6},profileCard:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},avatar:{height:52,width:52,borderRadius:26,backgroundColor:colors.orange,alignItems:'center',justifyContent:'center'},avatarText:{fontSize:22,fontWeight:'900',color:'#17120B'},profileName:{color:colors.text,fontSize:17,fontWeight:'800',marginBottom:4},settings:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8},sos:{position:'absolute',right:22,bottom:82,width:58,height:58,borderRadius:29,alignItems:'center',justifyContent:'center',backgroundColor:colors.red,boxShadow:`0 0 14px ${colors.red}99`},sosText:{color:'#fff',fontWeight:'900',fontSize:13},tabs:{height:72,position:'absolute',left:0,right:0,bottom:0,backgroundColor:'#111923',borderTopWidth:1,borderTopColor:colors.line,flexDirection:'row',paddingTop:8},tab:{flex:1,alignItems:'center',gap:3},tabIcon:{color:colors.muted,fontSize:20,lineHeight:22},tabText:{color:colors.muted,fontSize:9,fontWeight:'700'},tabActive:{color:colors.orange},modalBack:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.6)'},modal:{backgroundColor:colors.surface2,borderTopLeftRadius:24,borderTopRightRadius:24,padding:24,paddingBottom:36},modalTitle:{color:colors.text,fontSize:22,fontWeight:'900'},modalText:{color:colors.muted,lineHeight:21,marginTop:8,marginBottom:20}
+  safe:{flex:1,backgroundColor:colors.bg},content:{padding:20,paddingBottom:112},authContent:{paddingVertical:24,paddingTop:72,flexGrow:1,alignItems:"center"},authForm:{paddingHorizontal:24},authLogo:{alignItems:'center',marginBottom:48},logoMark:{width:58,height:58,borderRadius:18,backgroundColor:colors.orange,alignItems:'center',justifyContent:'center',marginBottom:12},logoText:{color:colors.bg,fontWeight:'900',fontSize:30},logoName:{color:colors.text,fontSize:25,fontWeight:'900',letterSpacing:2},logoTag:{color:colors.muted,fontSize:12,marginTop:6},authTitle:{color:colors.text,fontSize:28,fontWeight:'900'},authSubtitle:{color:colors.muted,fontSize:13,lineHeight:20,marginTop:8,marginBottom:25},authTabs:{flexDirection:'row',backgroundColor:colors.surface,padding:4,borderRadius:12,marginBottom:25},authTab:{flex:1,alignItems:'center',paddingVertical:10,borderRadius:9},authTabActive:{backgroundColor:colors.surface2},authTabText:{color:colors.muted,fontWeight:'800',fontSize:13},authTabTextActive:{color:colors.text},inputLabel:{color:colors.text,fontWeight:'800',fontSize:12,marginBottom:7,marginTop:14},input:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.line,borderRadius:12,paddingHorizontal:14,paddingVertical:13,color:colors.text,fontSize:15},sendCodeButton:{marginTop:10},authButton:{marginTop:24},authHint:{color:colors.muted,fontSize:11,lineHeight:17,textAlign:'center',marginTop:16,paddingHorizontal:12},flex:{flex:1},hero:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',paddingTop:12,paddingBottom:22},eyebrow:{color:colors.orange,fontSize:11,fontWeight:'800',letterSpacing:1.2},greeting:{color:colors.text,fontSize:27,fontWeight:'800',lineHeight:34,marginTop:7},weather:{alignItems:'center'},weatherIcon:{fontSize:28,color:colors.orange},weatherTemp:{fontSize:18,fontWeight:'800',color:colors.text},weatherText:{fontSize:11,color:colors.muted},card:{backgroundColor:colors.surface,borderColor:colors.line,borderWidth:1,borderRadius:16,padding:15,marginBottom:12},alertCard:{flexDirection:'row',gap:10,borderColor:'#774735',backgroundColor:'#211B19'},alertIcon:{color:colors.orange,fontSize:18,fontWeight:'900',marginRight:10},alertTitle:{color:colors.text,fontWeight:'800',marginBottom:3},completeBanner:{flexDirection:'row',alignItems:'center',gap:10,borderColor:colors.orange},profileForm:{marginTop:2,borderColor:colors.orange},typeRow:{flexDirection:'row',flexWrap:'wrap',gap:7},optional:{color:colors.muted,fontWeight:'600'},muted:{color:colors.muted,fontSize:12,lineHeight:18},sectionTitle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:12,marginBottom:9},sectionHeading:{color:colors.text,fontSize:17,fontWeight:'800'},action:{color:colors.blue,fontSize:13,fontWeight:'700'},rowBetween:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},routeLabel:{color:colors.text,fontSize:15,fontWeight:'800',marginBottom:3},routeArrow:{color:colors.muted,fontSize:28},routeLine:{flexDirection:'row',alignItems:'center',marginVertical:16},routeDot:{width:10,height:10,borderRadius:10},routeDash:{height:2,backgroundColor:colors.line,flex:1,marginHorizontal:6},statRow:{flexDirection:'row',gap:36},statNumber:{color:colors.text,fontWeight:'800',fontSize:16},statLabel:{color:colors.muted,fontSize:11,marginTop:3},topGap:{marginTop:12},button:{borderRadius:11,paddingVertical:12,alignItems:'center'},button_primary:{backgroundColor:colors.orange},button_danger:{backgroundColor:colors.red},button_ghost:{borderColor:colors.line,borderWidth:1,backgroundColor:colors.surface2},buttonText:{color:'#17120B',fontWeight:'900',fontSize:13},ghostText:{color:colors.text},pressed:{opacity:.72},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},quick:{width:'48%',backgroundColor:colors.surface,borderColor:colors.line,borderWidth:1,borderRadius:14,padding:13,minHeight:82},quickIcon:{color:colors.orange,fontSize:20,fontWeight:'800',marginBottom:7},quickText:{color:colors.text,fontSize:12,fontWeight:'700'},newsTag:{color:colors.orange,fontSize:10,fontWeight:'900',letterSpacing:1},newsTitle:{color:colors.text,fontSize:15,fontWeight:'800',lineHeight:21,marginVertical:7},pageTitle:{color:colors.text,fontSize:27,fontWeight:'800',paddingTop:12},pageSubtitle:{color:colors.muted,fontSize:13,marginTop:4,marginBottom:10},mapCard:{height:230,padding:0,overflow:'hidden'},mapRoad:{height:190,backgroundColor:'#142333',position:'relative',overflow:'hidden'},mapPath:{position:'absolute',width:270,height:270,borderColor:colors.orange,borderWidth:8,borderRadius:150,transform:[{rotate:'-38deg'}],top:-56,left:12,borderLeftColor:'transparent',borderBottomColor:'transparent'},mapPin:{position:'absolute',top:53,left:'20%',backgroundColor:colors.text,width:26,height:26,borderRadius:15,alignItems:'center',justifyContent:'center'},mapCaption:{color:colors.muted,fontSize:11,padding:10},conditionRow:{flexDirection:'row',gap:10},condition:{flex:1},conditionValue:{fontSize:16,fontWeight:'900',color:colors.text},stop:{flexDirection:'row',alignItems:'center',gap:10},stopIcon:{height:43,width:43,borderRadius:12,alignItems:'center',justifyContent:'center'},stopName:{color:colors.text,fontSize:14,fontWeight:'800',marginBottom:3},categoryRow:{flexDirection:'row',gap:7,marginVertical:12},chip:{paddingHorizontal:13,paddingVertical:7,borderRadius:20,borderColor:colors.line,borderWidth:1},chipActive:{backgroundColor:colors.orange,borderColor:colors.orange},chipText:{color:colors.muted,fontSize:12,fontWeight:'700'},chipTextActive:{color:'#17120B'},shop:{flexDirection:'row',alignItems:'center',gap:11},shopImage:{height:56,width:56,borderRadius:12,backgroundColor:'#283540',alignItems:'center',justifyContent:'center'},shopEmoji:{fontSize:26},ready:{color:colors.green,fontWeight:'800',fontSize:11,marginTop:5},smallButton:{paddingHorizontal:11,paddingVertical:9,marginLeft:2},tipHero:{flexDirection:'row',alignItems:'center',gap:12,borderColor:'#795933',backgroundColor:'#211B17'},tipIcon:{fontSize:29},tipTitle:{color:colors.text,fontSize:15,fontWeight:'800',marginBottom:4},article:{paddingVertical:14},articleType:{color:colors.blue,fontSize:10,fontWeight:'900',letterSpacing:.8},articleTitle:{color:colors.text,fontSize:15,fontWeight:'800',marginVertical:6},profileCard:{flexDirection:'row',alignItems:'center',gap:12,marginTop:14},avatar:{height:64,width:64,borderRadius:32,backgroundColor:colors.orange,alignItems:'center',justifyContent:'center',overflow:'hidden'},avatarImage:{width:'100%',height:'100%'},avatarBusy:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.45)',alignItems:'center',justifyContent:'center'},avatarBadge:{position:'absolute',right:-2,bottom:-2,width:24,height:24,borderRadius:12,backgroundColor:colors.surface2,borderWidth:2,borderColor:colors.surface,alignItems:'center',justifyContent:'center'},avatarBadgeText:{color:colors.text,fontSize:11},avatarText:{fontSize:22,fontWeight:'900',color:'#17120B'},profileName:{color:colors.text,fontSize:17,fontWeight:'800',marginBottom:4},profilePhone:{color:colors.text,fontSize:18,fontWeight:'700',letterSpacing:1,marginBottom:2},settings:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:8},sos:{position:'absolute',right:22,bottom:82,width:58,height:58,borderRadius:29,alignItems:'center',justifyContent:'center',backgroundColor:colors.red,boxShadow:`0 0 14px ${colors.red}99`},sosText:{color:'#fff',fontWeight:'900',fontSize:13},tabs:{height:72,position:'absolute',left:0,right:0,bottom:0,backgroundColor:'#111923',borderTopWidth:1,borderTopColor:colors.line,flexDirection:'row',paddingTop:8},tab:{flex:1,alignItems:'center',gap:3},tabIcon:{color:colors.muted,fontSize:20,lineHeight:22},tabText:{color:colors.muted,fontSize:9,fontWeight:'700'},tabActive:{color:colors.orange},modalBack:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.6)'},modal:{backgroundColor:colors.surface2,borderTopLeftRadius:24,borderTopRightRadius:24,padding:24,paddingBottom:36},modalTitle:{color:colors.text,fontSize:22,fontWeight:'900'},modalText:{color:colors.muted,lineHeight:21,marginTop:8,marginBottom:20}
 });
