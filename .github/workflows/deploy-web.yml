@@ -38,11 +38,15 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
           install -m 700 -d ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The server is behind NAT, so SSH may be on a forwarded port.
+          printf 'Host %s\n  Port %s\n' "$SSH_HOST" "${SSH_PORT:-22}" > ~/.ssh/config
 
       - name: Upload
         env:
