@@ -22,6 +22,26 @@ chmod 600 "$APP/.env"
 DATABASE_URL=$(grep '^DATABASE_URL=' "$APP/.env" | cut -d= -f2-)
 psql -q -v ON_ERROR_STOP=1 "$DATABASE_URL" -f "$APP/db/init.sql"
 
+# nginx тохиргоо repo-д өөрчлөгдсөн бол шинэчилнэ. certbot-ын нэмсэн 443 блокийг дахин суулгана;
+# амжилтгүй бол хуучныг сэргээнэ.
+SITE=/etc/nginx/sites-available/zam.xpro.mn
+CONF="$APP/deploy/nginx-zam.xpro.mn.conf"
+if [ -f "$SITE" ] && ! cmp -s "$CONF" "$SITE.repo"; then
+  cp "$SITE" "$SITE.bak"
+  cp "$CONF" "$SITE"
+  if certbot install --nginx --cert-name zam.xpro.mn --non-interactive >/dev/null && nginx -t; then
+    cp "$CONF" "$SITE.repo"
+    systemctl reload nginx
+    echo "nginx config updated"
+  else
+    cp "$SITE.bak" "$SITE"
+    echo "nginx config update failed, previous config restored"
+  fi
+fi
+
+# Дараагийн deploy энэ скриптийн шинэ хувилбараар ажиллана.
+install -m 755 -o root -g root "$APP/deploy/road-deploy.sh" /usr/local/bin/road-deploy
+
 PORT=$(grep '^PORT=' "$APP/.env" | cut -d= -f2-)
 systemctl restart road-api
 for i in $(seq 1 10); do
